@@ -283,6 +283,29 @@ def create_mask_from_columns(dataframe, column_names, column_values):
     return total_mask
 
 def dataframe_to_xyz(dataframe, output_name='xyz file', comment_line='XYZ file'):
+    """
+
+     a function that recieves a dataframe, output name, and comment line and creates a xyz type file.
+     
+    parameters
+
+    ---
+
+    dataframe: an array that can contain different classes of data, needs to be 4 colums to run.
+
+    output_name:str, the name for the file created.
+
+    omment_line: str, the headline of the file .
+
+     returns
+
+    ---
+
+    total_mask: a list of the True in rows where the values were found in the colums and False otherwise
+
+    examples:
+    ---
+    """
     output_filename=output_name
     number_of_atoms=dataframe.shape[0]
     atoms_np_array=dataframe.to_numpy()
@@ -293,7 +316,7 @@ def dataframe_to_xyz(dataframe, output_name='xyz file', comment_line='XYZ file')
 
 def change_filetype (filename,new_type):
     """
-     a function that recieves a file name, and a new type, and changes the type-ending of the file's name to the new one.
+    a function that recieves a file name, and a new type, and changes the type-ending of the file's name to the new one.
 
     parameters
     ---
