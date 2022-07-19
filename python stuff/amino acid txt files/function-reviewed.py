@@ -295,13 +295,8 @@ def dataframe_to_xyz(dataframe, output_name='xyz file', comment_line='XYZ file')
 
     output_name:str, the name for the file created.
 
-    omment_line: str, the headline of the file .
-
-     returns
-
+    comment_line: str, the headline of the file .
     ---
-
-    total_mask: a list of the True in rows where the values were found in the colums and False otherwise
 
     examples:
     ---
