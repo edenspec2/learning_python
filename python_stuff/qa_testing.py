@@ -65,5 +65,7 @@ if __name__=='__main__':
     external_qa_results=qa_tester.run_full_evaluation(function_2, test_inputs=QAConstants.TEST_INPUT.value)
     print('expecting True: ', self_qa_results)
     print('expecting False: ', external_qa_results)
+
+    
     
     
