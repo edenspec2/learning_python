@@ -1,5 +1,5 @@
 import sys
-path_to_add=r'C:\Users\edenspec\Documents\GitHub'
+path_to_add=r'C:\Users\avishayk\Documents\GitHub\learning_python'
 sys.path.insert(0, path_to_add)
 
 import pandas as pd
