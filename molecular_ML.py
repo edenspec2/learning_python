@@ -117,15 +117,16 @@ if __name__=='__main__':
 ##        ind+=1
     
 
-    xyz_all_molecules=molecules_to_coordinates_array(file_txt[0:1],'atoms')
+    xyz_all_molecules=molecules_to_coordinates_array(file_txt[0:3],'atoms')
     three_atoms=file_txt[0:2]
     atom_count=sum_atoms_in_molecule(three_atoms)
     print(atom_count)
 ##    for at in file_txt[0:3]:
 ##        print(at)
+    print(xyz_all_molecules)
 
     print(molecule_max_lenght(xyz_all_molecules[0]))
-    counter={x:i.count(x) for x in i}
+
 
     
 ##    print(xyz_all_molecules)  #works
