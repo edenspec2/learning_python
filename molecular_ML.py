@@ -1,5 +1,6 @@
 import sys
 path_to_add=r'C:\Users\avishayk\Documents\GitHub\learning_python'
+path_to_add=r'C:\Users\עדן\Documents\GitHub\learning_python\python_stuff'
 sys.path.insert(0, path_to_add)
 
 import pandas as pd
@@ -153,32 +154,30 @@ if __name__=='__main__':
     string_molecule_1=json.dumps(file_txt[0])  
 
 
-<<<<<<< HEAD
+
     xyz_all_molecules=molecules_to_coordinates_array(file_txt[0:3],'atoms')
     three_atoms=file_txt[0:2]
     atom_count=sum_atoms_in_molecule(three_atoms)
-=======
+
     
     molecule_1=file_txt[0]
     xyz_all_molecules=molecules_to_coordinates_array(file_txt[0:4])
     atom_test_veriable=file_txt[0:4]
     atom_count=sum_atoms_in_molecule(atom_test_veriable)
->>>>>>> 46dfc7f64fe7c5450b2261672e9b28ab245f0f51
+
     print(atom_count)
 ##    for at in file_txt[0:3]:
 ##        print(at)
     print(xyz_all_molecules)
 
-<<<<<<< HEAD
-    print(molecule_max_lenght(xyz_all_molecules[0]))
-=======
+
 
     print(molecules_max_lenght(xyz_all_molecules))
     counter=get_atoms_type_count(atom_test_veriable)
     print(counter)
     print(get_mw_single_molecule(molecule_1))
 
->>>>>>> 46dfc7f64fe7c5450b2261672e9b28ab245f0f51
+
 
 
     
