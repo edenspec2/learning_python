@@ -7,84 +7,193 @@ import pandas as pd
 import numpy as np
 import os
 import json
-import itertools
 import math
 from collections import Counter
 from enum import Enum
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
  
-"""
-##parameters to find using xyz- avr/max radius, double and single bonds, average bond distance
-##
-dataframe_colums_exampe=['id','En','number_of_atoms','radius/diameter','double_bonds'?,'nof_atoms','dipol_data']
 
-"""
 class MLConstants(Enum):
-    atoms=['H','C','N','O','S','F','Si','P','Cl','Br','I']
+    periodic_table = {
+            'H':[1, 1.0079],
+            'C':[6, 12.0107],
+            'N':[7, 14.0067],
+            'O':[8, 15.9994],
+            'S':[16, 32.065],
+            'F':[9, 18.9984],
+            'Si':[14, 28.0855],
+            'P':[15, 30.9738],
+            'Cl':[17, 35.453],
+            'Br':[35, 79.904],
+            'I': [53, 126.9045]
+            }
+    column_names=['id','number_of_atoms', 'max_lenght', 'dipole_data','mw','type_count']
+    shapeM_names=['shapeM_0','shapeM_1','shapeM_2','shapeM_3','shapeM_4','shapeM_5','shapeM_5','shapeM_6','shapeM_7','shapeM_8','shapeM_9','shapeM_10','shapeM_11','shapeM_12']
 
     
 def json_file_to_text(filename='pubChem_p_00000001_00025000.json'):
+    """
+    a function that recives a jason file and turns it to the equivalent python object.
+    parameters
+    ---
+    filename:str
+    the name of the json file
+
+    returns
+    ---
+    data_file:the equivalent python object
+    """
+    
+    
     f=open(filename)
     data_file=json.load(f)
     f.close()
     return data_file
 
 
-##def get_atom_type_count(molecule):
-##        molecule_string=json.dumps(molecule)
-##        carbon_count,hydrogen_count,nof_count,halogen_counter,other_couner=0,0,0,0,0
-##        results=[]
-##        nof=['N','O','F']
-##        halogen=['F','Cl','Br','I']
-##        other=['P','Si','S']
-##        for atom in molecule_string:
-##            if atom=='C':
-##                carbon_count+=1
-##            elif atom=='H':
-##                hydrogen_count+=1
-##            elif atom in nof:
-##                nof_count+=1
-##            elif atom in halogen:
-##                halogen_count+=1
-##            elif atom in other:
-##                other_count+=1
-##            results=[carbon_count,hydrogen_count,nof_count,halogen_counter,other_couner]
-##        return results
-##
-##def get_atoms_type_count(molecules):
-##    counter=[get_atom_type_count(atom) for atom in molecules]
-##    return counter
-
 def get_atom_type_count(molecule):
+    """
+    a function that recives a molecule data and returns the molecule's empirical formula .
+    parameters
+    ---
+    molecule: a dictionary containing data for single molecule.
+    
+
+    returns
+    ---
+    new_counter:dictionary, representation of the molecule empirical formula.
+
+    examples
+    ---
+    molecule_1 =
+    {'En': 37.801, 'atoms':
+    [{'type': 'O', 'xyz': [0.3387, 0.9262, 0.46]},
+    {'type': 'O', 'xyz': [3.4786, -1.7069, -0.3119]},
+    {'type': 'C', 'xyz': [1.8428, -1.4073, 1.2523]},
+    {'type': 'N', 'xyz': [0.4166, 2.5213, -1.2091]}}
+    
+    molecule_1_atom_type_count=get_atom_type_count(molecule_1)
+
+    OUTPUT:
+    {'O':2, 'C':1, 'N':1}
+    """
     molecule_string=json.dumps(molecule)
     counter=Counter(molecule_string)
     new_counter={}
     for key,value in counter.items():
-        if key in MLConstants.atoms.value:
+        if key in MLConstants.periodic_table.value:
             new_counter[key]=value
     return new_counter
 
+
 def get_atoms_type_count(molecules):
+    """
+    a function that recives molecules data and returns the molecules empirical formula .
+    parameters
+    ---
+    molecules: a list of dictionarys containing data for multiple molecules.
+    
+
+    returns
+    ---
+    atoms_counter:list of dictionaries, each dictionary containing the empirical formula of a molecule
+
+    examples
+    ---
+    molecule_1&2 =
+    [{'En': 37.801, 'atoms':
+    [{'type': 'O', 'xyz': [0.3387, 0.9262, 0.46]},
+    {'type': 'O', 'xyz': [3.4786, -1.7069, -0.3119]},
+    {'type': 'C', 'xyz': [1.8428, -1.4073, 1.2523]},
+    {'type': 'N', 'xyz': [0.4166, 2.5213, -1.2091]},
+    {'En': 37.801, 'atoms':
+    [{'type': 'P', 'xyz': [0.3387, 0.9262, 0.46]},
+    {'type': 'N', 'xyz': [3.4786, -1.7069, -0.3119]},
+    {'type': 'N', 'xyz': [1.8428, -1.4073, 1.2523]},
+    {'type': 'H', 'xyz': [0.4166, 2.5213, -1.2091]}]
+    
+    molecule_1&2_atom_type_count=get_atoms_type_count(molecule_1&2)
+
+    OUTPUT:
+    [{'O':2, 'C':1, 'N':1},{'P':1, 'N':2, 'H':1}]
+    """
     atoms_counter=[get_atom_type_count(molecule) for molecule in molecules]
     return atoms_counter
 
-        
 
-##def atom_type_count(molecule_string):
-##    my_count=Counter(molecule['atoms'] for molecule in molecule_string)
-##    return my_count
+def molecule_to_coordinates_list(molecule):
+    """
+    a function that recives a molecule data and returns a list with xyz coordinates.
+    parameters
+    ---
+    molecule: a dictionary containing data for single molecule.
+    
 
-def double_bond_count():
-    pass
+    returns
+    ---
+    xyz_coordinates:list, xyz coordinates for each atom in the molecule.
 
-def molecule_to_coordinates_array(molecule):
+    examples
+    ---
+    molecule_1 =
+    {'En': 37.801, 'atoms':
+    [{'type': 'O', 'xyz': [0.3387, 0.9262, 0.46]},
+    {'type': 'O', 'xyz': [3.4786, -1.7069, -0.3119]},
+    {'type': 'C', 'xyz': [1.8428, -1.4073, 1.2523]},
+    {'type': 'N', 'xyz': [0.4166, 2.5213, -1.2091]}}
+    
+    molecule_1_coordinates=molecule_to_coordinates_list(molecule_1)
+
+    OUTPUT:
+    [0.3387, 0.9262, 0.46]
+    [3.4786, -1.7069, -0.3119]
+    [1.8428, -1.4073, 1.2523]
+    [0.4166, 2.5213, -1.2091]
+    """
     xyz_coordinates=[atom['xyz'] for atom in molecule] ## instead of creating a list , then a loop with append.
     return xyz_coordinates
 
-def molecules_to_coordinates_array(molecule_string,column='atoms'):
-    xyz_coordinates=[np.array(molecule_to_coordinates_array(molecule[column])) for  molecule in molecule_string]
+def molecules_to_coordinates_array(molecules,column='atoms'):
+    """
+    a function that recives molecules data and returns an array with xyz coordinates for all molecules.
+    parameters
+    ---
+    molecules: a list of dictionarys containing data for multiple molecules.
+    
+
+    returns
+    ---
+    xyz_coordinates:list, xyz coordinates for each atom in all the molecules.
+
+    examples
+    ---
+    molecule_1&2 =
+    [{'En': 37.801, 'atoms':
+    [{'type': 'O', 'xyz': [0.3387, 0.9262, 0.46]},
+    {'type': 'O', 'xyz': [3.4786, -1.7069, -0.3119]},
+    {'type': 'C', 'xyz': [1.8428, -1.4073, 1.2523]},
+    {'En': 44.1107, 'atoms':
+    [{'type': 'O', 'xyz': [-0.3716, -0.9039, -0.2836]},
+    {'type': 'O', 'xyz': [-1.6132, 3.0213, 0.1787]},
+    {'type': 'O', 'xyz': [-1.9869, 1.2054, -1.1367]}]
+    
+    molecule_1&2_coordinates=molecules_to_coordinates_array(molecule_1&2)
+
+    OUTPUT:
+    array[0.3387, 0.9262, 0.46]
+         [3.4786, -1.7069, -0.3119]
+         [1.8428, -1.4073, 1.2523]
+    array[-0.3716, -0.9039, -0.2836]
+         [-1.6132, 3.0213, 0.1787]
+         [-1.9869, 1.2054, -1.1367]
+    
+    
+    """
+    xyz_coordinates=[np.array(molecule_to_coordinates_list(molecule[column])) for  molecule in molecules]
     return xyz_coordinates
 
-def sum_atoms_in_molecule(molecule_string): #not working
+def sum_atoms_in_molecule(molecule_string):
     count=[len(molecule['atoms']) for molecule in molecule_string]
     return count
     
@@ -103,54 +212,42 @@ def molecule_max_lenght(coordinates):
 def molecules_max_lenght(coordinates):
     max_lenght_array=[molecule_max_lenght(single_atom) for single_atom in coordinates]
     return max_lenght_array
+
+def get_data_from_shapeM(molecules):
+    shapeM_data=[(molecule['shapeM']) for molecule in molecules]
+    return shapeM_data
+
+def get_sorted_dataframe_from_molecules(molecules,column_names='none'):
+    df=pd.DataFrame(molecules)
+    shapeM_df=pd.DataFrame(get_data_from_shapeM(molecules), columns=MLConstants.shapeM_names.value)
+    df=df.drop(['En','atoms','shapeM'], axis=1)
+    ## adding all the new parameters
+    df['molecule max lenght'],df['MW']=molecules_max_lenght(molecules_to_coordinates_array(molecules)),get_mw_many_molecules(molecules)
+    df=pd.concat([df, pd.DataFrame(get_atoms_type_count(molecules)).fillna(0),shapeM_df], axis=1)
+    df=df.set_index('id')
+    return df
     
 
-def get_sorted_dataframe_from_molecules(molecules):
-    pass
-
-def get_mw_single_molecule(molecule):
+def get_mw_single_molecule(molecule): 
     counter=get_atom_type_count(molecule)
     mw=0
     for key,value in counter.items():
-        mw+=counter[key]*value
+        mw+=(MLConstants.periodic_table.value[key][1]*value)
     return mw
-    
-    
+
+def get_mw_many_molecules(molecules):
+    mw=[get_mw_single_molecule(molecule) for molecule in molecules]
+    return mw
 
 
-def single_bond_lenght():
+def double_bond_count():
     pass
-
-def average_bond_lenght():
-    pass
-
-def molecule_radius():
-    pass
-
-
-##def append_to_new_dataframe(dataframe_columns):
-##    new_df=[values for values in dataframe_columns]
-##    return new_df
 
 
 if __name__=='__main__':
 
-    periodic_table = {
-            'H':[1, 1.0079],
-            'C':[6, 12.0107],
-            'N':[7, 14.0067],
-            'O':[8, 15.9994],
-            'S':[16, 32.065],
-            'F':[9, 18.9984],
-            'Si':[14, 28.0855],
-            'P':[15, 30.9738],
-            'Cl':[17, 35.453],
-            'Br':[35, 79.904],
-            'I': [53, 126.9045]
-            }
-
-
     file_txt=json_file_to_text('pubChem_p_00000001_00025000.json')
+<<<<<<< HEAD
     string_molecule_1=json.dumps(file_txt[0])  
 
 
@@ -171,32 +268,58 @@ if __name__=='__main__':
     print(xyz_all_molecules)
 
 
+=======
+    pd.set_option('display.max_column', None)
+    y_train=pd.DataFrame(file_txt[0:100])['En']
+    x_df_train=get_sorted_dataframe_from_molecules(file_txt[0:100])
+    x_df_test=get_sorted_dataframe_from_molecules(file_txt[101:200])
+    regr = LinearRegression().fit(x_df_train, y_train)
+    y_predict=regr.predict(x_df_test)
+    y_true=pd.DataFrame(file_txt[101:200])['En']
+    print(x_df_train.head())
+    print(regr.score(x_df_train, y_train))
+    print(r2_score(y_true,y_predict))
+    print(file_txt[0])
+    print(file_txt[1])
+    
 
-    print(molecules_max_lenght(xyz_all_molecules))
-    counter=get_atoms_type_count(atom_test_veriable)
-    print(counter)
-    print(get_mw_single_molecule(molecule_1))
+        
+>>>>>>> f0f1104d6f6c5b5803022038e2b170fbf075f5cb
+
+
+<<<<<<< HEAD
+
+=======
+>>>>>>> f0f1104d6f6c5b5803022038e2b170fbf075f5cb
+
+
+    
+    
+
+    
+
+
+
+    
+
+
+    
+
+
+
+    
+
+        
 
 
 
 
     
-##    print(xyz_all_molecules)  #works
-##    for at in atom_count:
-##        print(at)
-
-   
-            
-
-##  D = pdist(X) #ecludian distance
     
-##    ind=0
-##    molecule_energy,molecule_mltipoles,molecule_id=[],[],[]
-##    for molecule in file_txt:
-##        molecule_energy.append(molecule['En'])
-##        molecule_mltipoles=molecule['shapeM']
-##        molecule_id[ind]=molecule['id']
-##    print(molecule_energy)
+
+    
+
+
 
     
 
