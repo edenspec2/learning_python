@@ -16,7 +16,7 @@ if __name__=='__main__':
     print('all good')
 
 
-num1=get_xyz_df(2,3)
+num1=get_xyz_df(2,-2)
 num2=align_molecules(num1)
 num3=(run_calculation(num2))
 num4=get_ml_model(num3)

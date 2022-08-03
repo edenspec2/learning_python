@@ -59,19 +59,6 @@ def run_automation_cycle(module, automation_cycle, validation_data):
         mid_results=actual_function(mid_results)
     return mid_results
 
-# illustration of run_automation_cycle on run_comp
-##def run_comp_set_cycle(num_1, num_2):
-##    num_3=comp_set.get_xyz_df(num_1, num_2)
-##    num_4=comp_set.align_molecules(num_3)
-##    numbers_1=comp_set.run_calculation(num_4)
-##    numbers_2=comp_set.get_ml_model(numbers_1)
-##    return numbers_2
-# Example for the usage of run automation_cycle
-##automation_cycle=AutomationCycles.COMP_SET.value
-##automated_results=run_automation_cycle(comp_set, automation_cycle, validation_data)
-##print('run_automation_cycle')
-##print(automated_results)
-##print(automated_results==validation_results)
 
 ## for use in check_building_block_solely
 def check_input_validity(building_block, validation_data):
@@ -97,7 +84,7 @@ def check_building_block_solely(building_block_1, building_block_2, validation_d
         for data in validation_data:
             if check_input_validity(building_block_1,data):
                 if check_input_validity(building_block_2,data):
-                    try:
+                    try: ## used to deal with different types of data- iter or single value
                         iter(data)
                         test_results.append(building_block_1(*data)==building_block_2(*data))
                     except:
@@ -116,17 +103,29 @@ def check_building_block_solely(building_block_1, building_block_2, validation_d
     # Check all validation data on building_block_2 -> if failed -> return False
     # If the results from both run are identical -> return True
 
-def check_building_block_integration(new_building_block_name, new_building_block, automation_cycle):
+
+
+def check_building_block_integration(module, new_building_block, automation_cycle,validation_data): ##def check_building_block_integration(new_building_block_name, new_building_block, automation_cycle):
     """
     The function get a building block, it's name and the automation cycle wanted for testing.
     The function will run the automation cycle as is and with the new building block - and checks whether the results are identical.
     The function will return True if the operation is identical and False otherwise
     """
+
+
+    automated_results=run_automation_cycle(module, automation_cycle,validation_data)
+    for function_name in automation_cycle:
+        if check_building_block_solely(new_building_block,function_name,validation_data):
+            automation_cycle[function_name]=new_building_block
+    new_automated_results=run_automation_cycle(module, automation_cycle,validation_data)
+    return new_automated_results==automated_results
+
+
+            
     # Since this runs will take time - consider saving the output of known cycles
     # Think of how to store the automation cycles validation data
     # Check the run with the new building block
     # If the results from both run are identical -> return True AND save the new output(?)
-    return True
 
 class QATester():
     """
@@ -175,28 +174,26 @@ if __name__=='__main__':
     function_dict=get_module_function_dict(cp)
     first_function=function_dict.get(AutomationCycles.COMP_SET.value[0])
     second_function=function_dict.get(AutomationCycles.COMP_SET.value[1])
-##    
+##
+    automation_cycle=AutomationCycles.COMP_SET.value
     qa_tester=QATester(new_building_block_name, building_block_1)
     validation_data_1=((2,-2),(4,5))
     validation_data_2=[4,2]
+    validation_data_3=(1,-1)
     print(check_building_block_solely(test_function_2,second_function, validation_data_2))
 
     print(check_building_block_solely(test_function_1,first_function, validation_data_1))
     print(check_building_block_solely(test_function_3,first_function, validation_data_1))
 
-##    print(check_input_validity(test_function_2,validation_data_2))
-##    print(check_input_validity(building_block_1,validation_data_1))
-        
-
-##    function_dict=get_module_function_dict(cp)
-##    automation_cycle=AutomationCycles.COMP_SET.value
-##    automated_results=run_automation_cycle(cp, automation_cycle, [2,4])
+    print(check_building_block_integration(cp,test_function_3,automation_cycle,validation_data_3))
 
 
-    automation_cycle=AutomationCycles.COMP_SET.value
-    automated_results=run_automation_cycle(cp, automation_cycle, (2,-2))
+
+
+##    automated_results=run_automation_cycle(cp, automation_cycle, (2,-2))
 ##    print('run_automation_cycle')
 ##    print(automated_results)
-##    print(automated_results==validation_results)
+ 
+
 
 
