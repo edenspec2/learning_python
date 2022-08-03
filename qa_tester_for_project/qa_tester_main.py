@@ -1,3 +1,4 @@
+import comp_set
 from enum import Enum
 
 class BuildingBlockFunctions(Enum):
@@ -6,12 +7,13 @@ class BuildingBlockFunctions(Enum):
     """
     FUNCTION_DICT={'function_name': 'actual_function'}
 
+#Assumption - Output -> Input in automation cycles
 class AutomationCycles(Enum):
     """
     Hold iterables of common automation cycles
     Automation cycle is defined as a sequence of functions that generally run togather
     """
-    SET_COMP=()
+    COMP_SET=('get_xyz_df', 'align_molecules', 'run_calculation', 'get_ml_model')
     MODEL=()
 
 class ValidationData(Enum):
@@ -25,6 +27,49 @@ def get_old_building_block(building_block_name='function_name'):
     The function gets a building block name and returns the corresponding function name
     """
     return BuildingBlockFunctions.FUNCTION_DICT.value.get(building_block_name)
+
+def get_module_function_dict(module):
+    """
+    takes a module and returns a dictionary where every key is the name of the function,
+    and the values are the actual functions
+    Example:
+    get_module_function_dict(comp_set)
+    {'align_molecules': <function align_molecules at 0x000002DCE736AB88>,
+    'get_ml_model': <function get_ml_model at 0x000002DCE736AEE8>,
+    'get_xyz_df': <function get_xyz_df at 0x000002DCE73198B8>,
+    'run_calculation': <function run_calculation at 0x000002DCE736AC18>}
+    """
+    from inspect import getmembers, isfunction
+    function_dict=dict(getmembers(module, isfunction))
+    return function_dict
+
+#Assumption - Output -> Input in automation cycles
+def run_automation_cycle(module, automation_cycle, validation_data):
+    """
+    goes trough every function in the automation_cycle, where the output of the first function is
+    the output of the next function and so on..
+    """
+    function_dict=get_module_function_dict(module)
+    first_function=function_dict.get(automation_cycle[0])
+    mid_results=first_function(*validation_data)
+    for function_name in automation_cycle[1:]:
+        actual_function=function_dict.get(function_name)
+        mid_results=actual_function(mid_results)
+    return mid_results
+
+# illustration of run_automation_cycle on run_comp
+##def run_comp_set_cycle(num_1, num_2):
+##    num_3=comp_set.get_xyz_df(num_1, num_2)
+##    num_4=comp_set.align_molecules(num_3)
+##    numbers_1=comp_set.run_calculation(num_4)
+##    numbers_2=comp_set.get_ml_model(numbers_1)
+##    return numbers_2
+# Example for the usage of run automation_cycle
+##automation_cycle=AutomationCycles.COMP_SET.value
+##automated_results=run_automation_cycle(comp_set, automation_cycle, validation_data)
+##print('run_automation_cycle')
+##print(automated_results)
+##print(automated_results==validation_results)
 
 ## for use in check_building_block_solely
 def check_input_validity(building_block, validation_data):
