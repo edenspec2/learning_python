@@ -81,6 +81,7 @@ def check_input_validity(building_block, validation_data):
     except:
         try:
            value=building_block(*validation_data)
+           return True
         except TypeError:
              return False
     
@@ -96,14 +97,18 @@ def check_building_block_solely(building_block_1, building_block_2, validation_d
         for data in validation_data:
             if check_input_validity(building_block_1,data):
                 if check_input_validity(building_block_2,data):
-                    test_results.append(building_block_1(data)==building_block_2(data))
+                    try:
+                        iter(data)
+                        test_results.append(building_block_1(*data)==building_block_2(*data))
+                    except:
+                        test_results.append(building_block_1(data)==building_block_2(data))
             else:
                 test_results.append(False)
         return test_results
     except TypeError:
         if check_input_validity(building_block_1,validation_data):
                 if check_input_validity(building_block_2,validation_data):
-                    return (building_block_1(*validation_data)==building_block_2(*validation_data))
+                    return (building_block_1(validation_data)==building_block_2(validation_data))
         else:
             return False
             
@@ -160,6 +165,8 @@ def test_function_1(x,y):
     return x+y
 def test_function_2(x):
     return x*2
+def test_function_3(x,y):
+    return x-y
     
 if __name__=='__main__':
     new_building_block_name='function_name'
@@ -170,12 +177,15 @@ if __name__=='__main__':
     second_function=function_dict.get(AutomationCycles.COMP_SET.value[1])
 ##    
     qa_tester=QATester(new_building_block_name, building_block_1)
-    validation_data_1=[4,2]
-    validation_data_2=[(2,-2),(4,5)]
-    print(check_building_block_solely(test_function_2,second_function, validation_data_1))
+    validation_data_1=((2,-2),(4,5))
+    validation_data_2=[4,2]
+    print(check_building_block_solely(test_function_2,second_function, validation_data_2))
 
-    print(check_input_validity(test_function_2,validation_data_1))
-    print(check_input_validity(building_block_1,validation_data_2))
+    print(check_building_block_solely(test_function_1,first_function, validation_data_1))
+    print(check_building_block_solely(test_function_3,first_function, validation_data_1))
+
+##    print(check_input_validity(test_function_2,validation_data_2))
+##    print(check_input_validity(building_block_1,validation_data_1))
         
 
 ##    function_dict=get_module_function_dict(cp)
@@ -189,10 +199,4 @@ if __name__=='__main__':
 ##    print(automated_results)
 ##    print(automated_results==validation_results)
 
-##    function_dict=get_module_function_dict(cp)
-##    first_function=function_dict.get(AutomationCycles.COMP_SET.value[0])
-##    mid_results=first_function(5)
-##    for function_name in AutomationCycles.COMP_SET.value[1:]:
-##        actual_function=function_dict.get(function_name)
-##        mid_results=actual_function(mid_results)
-##    print(mid_results)
+
