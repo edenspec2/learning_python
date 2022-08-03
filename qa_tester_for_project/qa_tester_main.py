@@ -1,5 +1,7 @@
-import comp_set
+import comp_set as cp
 from enum import Enum
+from inspect import getmembers, isfunction
+import inspect as an
 
 class BuildingBlockFunctions(Enum):
     """
@@ -39,8 +41,8 @@ def get_module_function_dict(module):
     'get_xyz_df': <function get_xyz_df at 0x000002DCE73198B8>,
     'run_calculation': <function run_calculation at 0x000002DCE736AC18>}
     """
-    from inspect import getmembers, isfunction
-    function_dict=dict(getmembers(module, isfunction))
+    
+    function_dict=dict(getmembers(module, isfunction)) #getmembers()- return information on an object class,function etc, isfunction is the condition to return info only on functions
     return function_dict
 
 #Assumption - Output -> Input in automation cycles
@@ -51,7 +53,7 @@ def run_automation_cycle(module, automation_cycle, validation_data):
     """
     function_dict=get_module_function_dict(module)
     first_function=function_dict.get(automation_cycle[0])
-    mid_results=first_function(*validation_data)
+    mid_results=first_function(*validation_data) #
     for function_name in automation_cycle[1:]:
         actual_function=function_dict.get(function_name)
         mid_results=actual_function(mid_results)
@@ -76,8 +78,11 @@ def check_input_validity(building_block, validation_data):
     try:
         value=building_block(validation_data)
         return True
-    except TypeError:
-         return False
+    except:
+        try:
+           value=building_block(*validation_data)
+        except TypeError:
+             return False
     
 def check_building_block_solely(building_block_1, building_block_2, validation_data=None):
     """
@@ -98,7 +103,7 @@ def check_building_block_solely(building_block_1, building_block_2, validation_d
     except TypeError:
         if check_input_validity(building_block_1,validation_data):
                 if check_input_validity(building_block_2,validation_data):
-                    return (building_block_1(validation_data)==building_block_2(validation_data))
+                    return (building_block_1(*validation_data)==building_block_2(*validation_data))
         else:
             return False
             
@@ -151,17 +156,43 @@ class QATester():
                 test_results.append(check_building_block_integration(self.new_building_block_name, self.new_building_block, automation_cycle.value))
         return test_results
 
-def test_function_1(x):
-    return x**2
-
+def test_function_1(x,y):
+    return x+y
 def test_function_2(x):
-    return x+2 
+    return x*2
     
 if __name__=='__main__':
     new_building_block_name='function_name'
     building_block_1=test_function_1
     building_block_2=test_function_2
+    function_dict=get_module_function_dict(cp)
+    first_function=function_dict.get(AutomationCycles.COMP_SET.value[0])
+    second_function=function_dict.get(AutomationCycles.COMP_SET.value[1])
+##    
     qa_tester=QATester(new_building_block_name, building_block_1)
-    print(qa_tester.test_building_block())
-    print(qa_tester.old_building_block)
-    print(check_building_block_solely(building_block_1,building_block_2,[2,4,'a']))
+    validation_data_1=[4,2]
+    validation_data_2=[(2,-2),(4,5)]
+    print(check_building_block_solely(test_function_2,second_function, validation_data_1))
+
+    print(check_input_validity(test_function_2,validation_data_1))
+    print(check_input_validity(building_block_1,validation_data_2))
+        
+
+##    function_dict=get_module_function_dict(cp)
+##    automation_cycle=AutomationCycles.COMP_SET.value
+##    automated_results=run_automation_cycle(cp, automation_cycle, [2,4])
+
+
+    automation_cycle=AutomationCycles.COMP_SET.value
+    automated_results=run_automation_cycle(cp, automation_cycle, (2,-2))
+##    print('run_automation_cycle')
+##    print(automated_results)
+##    print(automated_results==validation_results)
+
+##    function_dict=get_module_function_dict(cp)
+##    first_function=function_dict.get(AutomationCycles.COMP_SET.value[0])
+##    mid_results=first_function(5)
+##    for function_name in AutomationCycles.COMP_SET.value[1:]:
+##        actual_function=function_dict.get(function_name)
+##        mid_results=actual_function(mid_results)
+##    print(mid_results)

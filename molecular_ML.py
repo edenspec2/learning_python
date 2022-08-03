@@ -1,5 +1,5 @@
 import sys
-path_to_add=r'C:\Users\avishayk\Documents\GitHub\learning_python'
+##path_to_add=r'C:\Users\avishayk\Documents\GitHub\learning_python'
 path_to_add=r'C:\Users\עדן\Documents\GitHub\learning_python\python_stuff'
 sys.path.insert(0, path_to_add)
 
@@ -247,7 +247,7 @@ def double_bond_count():
 if __name__=='__main__':
 
     file_txt=json_file_to_text('pubChem_p_00000001_00025000.json')
-<<<<<<< HEAD
+
     string_molecule_1=json.dumps(file_txt[0])  
 
 
@@ -267,8 +267,6 @@ if __name__=='__main__':
 ##        print(at)
     print(xyz_all_molecules)
 
-
-=======
     pd.set_option('display.max_column', None)
     y_train=pd.DataFrame(file_txt[0:100])['En']
     x_df_train=get_sorted_dataframe_from_molecules(file_txt[0:100])
@@ -283,14 +281,6 @@ if __name__=='__main__':
     print(file_txt[1])
     
 
-        
->>>>>>> f0f1104d6f6c5b5803022038e2b170fbf075f5cb
-
-
-<<<<<<< HEAD
-
-=======
->>>>>>> f0f1104d6f6c5b5803022038e2b170fbf075f5cb
 
 
     
