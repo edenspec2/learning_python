@@ -34,7 +34,7 @@ class BuildingBlockFunctions(Enum):
     FUNCTION_DICT={'add_calc':'get_xyz_df'}
     
     FUNCTION_USE_DICT=get_module_function_dict(cp)
-    FUNCTION_USE_DICT.update({'add_calc':test_function_1})
+##    FUNCTION_USE_DICT.update({'add_calc':test_function_1})
 
 
 #Assumption - Output -> Input in automation cycles
@@ -104,26 +104,28 @@ def check_input_validity(building_block, validation_data):
         except TypeError:
              return False
     
-def check_building_block_solely(building_block_1, building_block_2, validation_data=None):
+def check_building_block_solely(new_building_block_name, validation_data=None):
     """
-    The function get two building blocks and validation data, and checks whether the operation of the building blocks is identical on their own.
+    The function a new building block and validation data, and checks whether the operation of the new building blocks is identical to the old building block it suppose to replace.
     The function will return True if the operation is identical and False otherwise
     """
     ## works with iter or single value
+    old_building_block=get_old_building_block(new_building_block_name)
+    new_building_block=BuildingBlockFunctions.FUNCTION_USE_DICT.value.get(new_building_block_name)
     try:
         iter(validation_data)
         test_results=[]
         for data in validation_data:
-            if check_input_validity(building_block_1,data):
-                if check_input_validity(building_block_2,data):
-                    test_results.append(building_block_1(data)==building_block_2(data))
+            if check_input_validity(old_building_block,data):
+                if check_input_validity(new_building_block,data):
+                    test_results.append(old_building_block(data)==new_building_block(data))
                 else:
                     test_results.append(False)
         return test_results
     except TypeError:
-        if check_input_validity(building_block_1,validation_data):
-                if check_input_validity(building_block_2,validation_data):
-                    return (building_block_1(validation_data)==building_block_2(validation_data))
+        if check_input_validity(old_building_block,validation_data):
+                if check_input_validity(new_building_block,validation_data):
+                    return (old_building_block(validation_data)==new_building_block(validation_data))
         else:
             return False
             
@@ -197,7 +199,7 @@ class QATester():
         self.new_building_block=new_building_block
         self.old_building_block=get_old_building_block(new_building_block_name)
  
-##        BuildingBlockFunctions.FUNCTION_DICT_USE.value.update(dict(new_building_block_name=getmembers(self,isfunction))) ## adds to funciton_dict_use when created
+        BuildingBlockFunctions.FUNCTION_USE_DICT.value.update({self.new_building_block_name:self.new_building_block}) ## adds to funciton_dict_use when created
         
         
     def test_building_block(self):
@@ -228,19 +230,11 @@ if __name__=='__main__':
     validation_data_1=((2,-2),(4,5))
     validation_data_2=[4,2]
     validation_data_3=(2)
-##    print(check_building_block_solely(test_function_2,second_function, validation_data_2))
+
+    
+    print(BuildingBlockFunctions.FUNCTION_USE_DICT.value)
 
 
-##    print(check_building_block_solely(test_function_1,first_function,validation_data_3))
-
-##    new_comp_set=get_new_comp_set_test(qa_tester.new_building_block_name,automation_cycle)
-    print(qa_tester.new_building_block_name)
-    print(qa_tester.old_building_block)
-    print(BuildingBlockFunctions.FUNCTION_DICT.value)
-##    print(BuildingBlockFunctions.FUNCTION_USE_DICT.value)
-##    print(get_new_function_dict_test(cp,'add_calc'))
-    print(get_new_module_dict_test(cp,'add_calc'))
-    print(get_new_automation_cycle_test('add_calc',automation_cycle))
     print(check_building_block_integration(cp,'add_calc',automation_cycle,2))
 
 
