@@ -2,33 +2,13 @@ import comp_set as cp
 from enum import Enum
 from inspect import getmembers, isfunction
 import inspect as an
+import numpy as np
 
-class BuildingBlockFunctions(Enum):
-    """
-    Holds a function referral dictionary, where every key is the name of function, and the value is the actual function
-    """
-    FUNCTION_DICT={'function_name': 'actual_function'}
-
-#Assumption - Output -> Input in automation cycles
-class AutomationCycles(Enum):
-    """
-    Hold iterables of common automation cycles
-    Automation cycle is defined as a sequence of functions that generally run togather
-    """
-    COMP_SET=('get_xyz_df', 'align_molecules', 'run_calculation', 'get_ml_model')
-    MODEL=()
-
-class ValidationData(Enum):
-    """
-    Holds validation referral dictionary, where every key is the name of the function, and the value is the input data to validate the function works well
-    """
-    DATA_DICT={'function_name': 'validation_data'}
-    
-def get_old_building_block(building_block_name='function_name'):
-    """
-    The function gets a building block name and returns the corresponding function name
-    """
-    return BuildingBlockFunctions.FUNCTION_DICT.value.get(building_block_name)
+### move to another file
+def test_function_1(x):
+    return x*2
+def test_function_2(x):
+    return x*2
 
 def get_module_function_dict(module):
     """
@@ -44,6 +24,46 @@ def get_module_function_dict(module):
     
     function_dict=dict(getmembers(module, isfunction)) #getmembers()- return information on an object class,function etc, isfunction is the condition to return info only on functions
     return function_dict
+ ###
+
+class BuildingBlockFunctions(Enum):
+    """
+    FUNCTION_DICT-Holds a function referral dictionary, where every key is the name of the new function, and the value is the name of the old function
+    FUNCTION_USE_DICT-Holds a function referral dictionary, where every key is the name of the  function, and the value is the actual function
+    """
+    FUNCTION_DICT={'add_calc':'get_xyz_df'}
+    
+    FUNCTION_USE_DICT=get_module_function_dict(cp)
+    FUNCTION_USE_DICT.update({'add_calc':test_function_1})
+
+
+#Assumption - Output -> Input in automation cycles
+class AutomationCycles(Enum):
+    """
+    Hold iterables of common automation cycles
+    Automation cycle is defined as a sequence of functions that generally run togather
+    """
+    COMP_SET=('get_xyz_df', 'align_molecules', 'run_calculation', 'get_ml_model')
+    MODEL=()
+
+class ValidationData(Enum):
+    """
+    Holds validation referral dictionary, where every key is the name of the function, and the value is the input data to validate the function works well
+    """
+    DATA_DICT={}
+    
+def get_old_building_block(building_block_name='function_name'):
+    """
+    The function gets a building block name and returns the corresponding old building block actual function 
+    """
+    old_building_clock= BuildingBlockFunctions.FUNCTION_DICT.value.get(building_block_name)
+    return BuildingBlockFunctions.FUNCTION_USE_DICT.value.get(old_building_clock)
+
+def get_new_building_block_name(building_block_name='function_name'):
+    """
+    The function gets a building block name and returns the corresponding new building block function name
+    """
+    return BuildingBlockFunctions.FUNCTION_DICT.value.get(building_block_name)
 
 #Assumption - Output -> Input in automation cycles
 def run_automation_cycle(module, automation_cycle, validation_data):
@@ -53,7 +73,19 @@ def run_automation_cycle(module, automation_cycle, validation_data):
     """
     function_dict=get_module_function_dict(module)
     first_function=function_dict.get(automation_cycle[0])
-    mid_results=first_function(*validation_data) #
+    mid_results=first_function(validation_data) #######****
+    for function_name in automation_cycle[1:]:
+        actual_function=function_dict.get(function_name)
+        mid_results=actual_function(mid_results)
+    return mid_results
+
+def run_new_automation_cycle(module_dict, automation_cycle, validation_data):
+    """
+    goes trough every function in the automation_cycle, the difference is it gets a module dictionary 
+    """
+    function_dict=module_dict
+    first_function=function_dict.get(automation_cycle[0])
+    mid_results=first_function(validation_data) #######****
     for function_name in automation_cycle[1:]:
         actual_function=function_dict.get(function_name)
         mid_results=actual_function(mid_results)
@@ -84,13 +116,9 @@ def check_building_block_solely(building_block_1, building_block_2, validation_d
         for data in validation_data:
             if check_input_validity(building_block_1,data):
                 if check_input_validity(building_block_2,data):
-                    try: ## used to deal with different types of data- iter or single value
-                        iter(data)
-                        test_results.append(building_block_1(*data)==building_block_2(*data))
-                    except:
-                        test_results.append(building_block_1(data)==building_block_2(data))
-            else:
-                test_results.append(False)
+                    test_results.append(building_block_1(data)==building_block_2(data))
+                else:
+                    test_results.append(False)
         return test_results
     except TypeError:
         if check_input_validity(building_block_1,validation_data):
@@ -103,22 +131,43 @@ def check_building_block_solely(building_block_1, building_block_2, validation_d
     # Check all validation data on building_block_2 -> if failed -> return False
     # If the results from both run are identical -> return True
 
+def get_new_automation_cycle_test(new_building_block_name,automation_cycle): ## need to change comp_set and function dict
+    old_function_name=BuildingBlockFunctions.FUNCTION_DICT.value.get(new_building_block_name)
+    new_automation_cycle=[]
+    for function_name in automation_cycle:
+        if function_name==old_function_name:
+            new_automation_cycle.append(new_building_block_name)
+        else:
+            new_automation_cycle.append(function_name)
+    return new_automation_cycle
+    
+def get_new_module_dict_test(module,new_building_block_name): ## works
+    function_dict=get_module_function_dict(module)
+    old_function_name=BuildingBlockFunctions.FUNCTION_DICT.value.get(new_building_block_name)
+    new_dict={}
+    for key,value in function_dict.items():
+        if key==old_function_name:
+            new_dict.update({new_building_block_name:BuildingBlockFunctions.FUNCTION_USE_DICT.value.get(new_building_block_name)})
+        else:
+            new_dict.update({key:value})
+
+    
+    return new_dict
+    
 
 
-def check_building_block_integration(module, new_building_block, automation_cycle,validation_data): ##def check_building_block_integration(new_building_block_name, new_building_block, automation_cycle):
+def check_building_block_integration(module, new_building_block_name, automation_cycle,validation_data): ##def check_building_block_integration(new_building_block_name, new_building_block, automation_cycle):
     """
     The function get a building block, it's name and the automation cycle wanted for testing.
     The function will run the automation cycle as is and with the new building block - and checks whether the results are identical.
     The function will return True if the operation is identical and False otherwise
+    use dictionary of new and old names to change between the 
     """
-
-
     automated_results=run_automation_cycle(module, automation_cycle,validation_data)
-    for function_name in automation_cycle:
-        if check_building_block_solely(new_building_block,function_name,validation_data):
-            automation_cycle[function_name]=new_building_block
-    new_automated_results=run_automation_cycle(module, automation_cycle,validation_data)
-    return new_automated_results==automated_results
+    new_automated_cycle=get_new_automation_cycle_test(new_building_block_name,automation_cycle)
+    new_module_dic=get_new_module_dict_test(module,new_building_block_name)
+    new_automated_results=run_new_automation_cycle(new_module_dic,new_automated_cycle,validation_data)
+    return (automated_results==new_automated_results)
 
 
             
@@ -146,29 +195,29 @@ class QATester():
         """
         self.new_building_block_name=new_building_block_name
         self.new_building_block=new_building_block
-
         self.old_building_block=get_old_building_block(new_building_block_name)
-
+ 
+##        BuildingBlockFunctions.FUNCTION_DICT_USE.value.update(dict(new_building_block_name=getmembers(self,isfunction))) ## adds to funciton_dict_use when created
+        
+        
     def test_building_block(self):
         """
         The method tests the building block both individually and as part of the automation cycles it intends to replace.
         """
         test_results=[] #[True, False, ..] for every QA test ran
-        test_results.append(check_building_block_solely(self.new_building_block, self.old_building_block))
+        test_results.append(check_building_block_solely(self.new_building_block, self.old_building_block,validation_data))
         for automation_cycle in AutomationCycles:
             if self.new_building_block_name in automation_cycle.value:
                 test_results.append(check_building_block_integration(self.new_building_block_name, self.new_building_block, automation_cycle.value))
         return test_results
 
-def test_function_1(x,y):
-    return x+y
-def test_function_2(x):
-    return x*2
-def test_function_3(x,y):
-    return x-y
+
+
     
 if __name__=='__main__':
-    new_building_block_name='function_name'
+    new_building_block_name='add_calc'
+    qa_tester=QATester(new_building_block_name,test_function_1)
+    
     building_block_1=test_function_1
     building_block_2=test_function_2
     function_dict=get_module_function_dict(cp)
@@ -176,23 +225,26 @@ if __name__=='__main__':
     second_function=function_dict.get(AutomationCycles.COMP_SET.value[1])
 ##
     automation_cycle=AutomationCycles.COMP_SET.value
-    qa_tester=QATester(new_building_block_name, building_block_1)
     validation_data_1=((2,-2),(4,5))
     validation_data_2=[4,2]
-    validation_data_3=(1,-1)
-    print(check_building_block_solely(test_function_2,second_function, validation_data_2))
-
-    print(check_building_block_solely(test_function_1,first_function, validation_data_1))
-    print(check_building_block_solely(test_function_3,first_function, validation_data_1))
-
-    print(check_building_block_integration(cp,test_function_3,automation_cycle,validation_data_3))
+    validation_data_3=(2)
+##    print(check_building_block_solely(test_function_2,second_function, validation_data_2))
 
 
+##    print(check_building_block_solely(test_function_1,first_function,validation_data_3))
+
+##    new_comp_set=get_new_comp_set_test(qa_tester.new_building_block_name,automation_cycle)
+    print(qa_tester.new_building_block_name)
+    print(qa_tester.old_building_block)
+    print(BuildingBlockFunctions.FUNCTION_DICT.value)
+##    print(BuildingBlockFunctions.FUNCTION_USE_DICT.value)
+##    print(get_new_function_dict_test(cp,'add_calc'))
+    print(get_new_module_dict_test(cp,'add_calc'))
+    print(get_new_automation_cycle_test('add_calc',automation_cycle))
+    print(check_building_block_integration(cp,'add_calc',automation_cycle,2))
 
 
-##    automated_results=run_automation_cycle(cp, automation_cycle, (2,-2))
-##    print('run_automation_cycle')
-##    print(automated_results)
+
  
 
 

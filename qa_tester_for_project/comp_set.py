@@ -1,7 +1,7 @@
 import numpy as np
 
-def get_xyz_df(x,y):
-    return x+y
+def get_xyz_df(x):
+    return x+5
 
 def align_molecules(b):
     return b+2
@@ -16,7 +16,7 @@ if __name__=='__main__':
     print('all good')
 
 
-num1=get_xyz_df(2,-2)
+num1=get_xyz_df(2)
 num2=align_molecules(num1)
 num3=(run_calculation(num2))
 num4=get_ml_model(num3)
