@@ -4,7 +4,7 @@ def get_xyz_df(x):
     return x+5
 
 def align_molecules(b,c):
-    return b+c
+    return b*c
 
 def run_calculation(z):
     return np.array([z, z+1, z+2])

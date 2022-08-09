@@ -19,7 +19,7 @@ import xyz_file_function as pl
 ##from learning-python.python_stuff.main.xyz_file_function import *
 
 
-def pdbfile_to_dataframe(pdb_filename, columns=None):
+def filename_to_dataframe(pdb_filename, columns=None):
     """UPDATED DOC
     a function that recieves a text and returns it as DataFrame.
 
@@ -131,7 +131,7 @@ if __name__=='__main__':
     list_of_pdb_files=[filename for filename in list_of_files if filename.endswith('pdb')]
     print(list_of_pdb_files)
     for pdb_filename in list_of_pdb_files:
-        my_database=pdbfile_to_dataframe(pdb_filename,columns=pdb_file_columns)
+        my_database=filename_to_dataframe(pdb_filename,columns=pdb_file_columns)
         normlize_point=my_database[['x','y','z']].astype(float).mean()
         amino_acid_chain, amino_acid_name, amino_acid_place=pdb_filename_to_identifiers(pdb_filename)
         new_database=pl.customize_columns(my_database,specific_columns)

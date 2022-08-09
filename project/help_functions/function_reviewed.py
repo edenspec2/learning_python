@@ -121,25 +121,32 @@ def get_normalize_coordinates(dataframe,coordinates_normalize_parameter):
     return dataframe
 
 
-
 pdb_file_columns=['Kind','', 'Atom name','Amino acid name', 'chain_number','place in chain','x','y','z','relative place','','Atom']
 specific_columns=['Amino acid name','chain_number','place in chain','x','y','z', 'Atom']
 column_names=['chain_number','Amino acid name','place in chain']
 
 if __name__=='__main__':
-    list_of_files=os.listdir(r'C:\Users\עדן\Documents\GitHub\learning_python\python_stuff\amino_acid_txt')
-    list_of_pdb_files=[filename for filename in list_of_files if filename.endswith('pdb')]
-    print(list_of_pdb_files)
-    for pdb_filename in list_of_pdb_files:
-        my_database=pdbfile_to_dataframe(pdb_filename,columns=pdb_file_columns)
-        normlize_point=my_database[['x','y','z']].astype(float).mean()
-        amino_acid_chain, amino_acid_name, amino_acid_place=pdb_filename_to_identifiers(pdb_filename)
-        new_database=pl.customize_columns(my_database,specific_columns)
-        total_mask=pl.search_multiple_vaules_in_columns(new_database, column_names, [amino_acid_chain, amino_acid_name, amino_acid_place])
-        new_database.loc[:, ['x','y','z']]=pl.get_normalize_coordinates(new_database[['x','y','z']].copy(),normlize_point)
-        output_filename=pl.change_filetype(pdb_filename, 'xyz')
-        pl.dataframe_to_xyz(new_database[total_mask][['Atom','x','y','z']],output_filename)
-        new_database[total_mask][['Atom','x','y','z']].to_csv(pl.change_filetype(pdb_filename, 'csv'))
+##    list_of_files=os.listdir(r'C:\Users\edenspec\Documents\GitHub\learning_python\python_stuff\amino_acid_txt')
+##    list_of_pdb_files=[filename for filename in list_of_files if filename.endswith('pdb')]
+##    print(list_of_pdb_files)
+##    for pdb_filename in list_of_pdb_files:
+##        my_database=pdbfile_to_dataframe(pdb_filename,columns=pdb_file_columns)
+##        normlize_point=my_database[['x','y','z']].astype(float).mean()
+##        amino_acid_chain, amino_acid_name, amino_acid_place=pdb_filename_to_identifiers(pdb_filename)
+##        new_database=pl.customize_columns(my_database,specific_columns)
+##        total_mask=pl.search_multiple_vaules_in_columns(new_database, column_names, [amino_acid_chain, amino_acid_name, amino_acid_place])
+##        new_database.loc[:, ['x','y','z']]=pl.get_normalize_coordinates(new_database[['x','y','z']].copy(),normlize_point)
+##        output_filename=pl.change_filetype(pdb_filename, 'xyz')
+##        pl.dataframe_to_xyz(new_database[total_mask][['Atom','x','y','z']],output_filename)
 ##        print(new_database[total_mask][['Atom','x','y','z']])
+    f=open(r'C:\Users\עדן\Documents\GitHub\learning_python\project\help_functions\A_THR_13_5Angs_noHOH.xyz')
+    lines=f.readlines()
+    lines=lines.split(' ')
+    df=pd.DataFrame(lines)
+    print(df)
+    df.to_csv('try_name.csv', sep=' ', index=False) 
+    f.close()
+
+    
 
 
