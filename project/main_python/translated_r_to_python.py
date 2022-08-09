@@ -23,20 +23,20 @@ def xyz_file_generatonr(my_path):
     for molecule in list_of_molecules:
         xyz_file=fr.filename_to_dataframe(molecule,columns=['atom','x','y','z'])
         xyz_file.replace(Variables.ATOMIC_DICT.value,inplace=True)
-        num_of_atoms=pd.Series([xyz_file.shape[0]],name='number_of_atoms')
-        xyz_file=pd.concat([num_of_atoms, xyz_file],axis=1)
-        xyz_file.fillna('',inplace=True)
-
-       
-    return xyz_file
+##        num_of_atoms=pd.Series([xyz_file.shape[0]],name='number_of_atoms')
+##        xyz_file=pd.concat([num_of_atoms, xyz_file],axis=1)
+##        xyz_file.fillna('',inplace=True)
+        new_filename=xyz.change_filetype(molecule)
+        xyz.dataframe_to_xyz(xyz_file,new_filename)
+    return 
                        
-def xyz_file_generator_library(parent_dir, directory_name):
-    path=os.path.join(parent_dir,directory_name)
+def xyz_file_generator_library(files_path, directory_name):
+    path=os.path.join(files_path,directory_name)
     os.mkdir(path)
     os.chdir(path)
-    molecules=[file for file in listdir(parent_dir) if os.my_path.isfile(join(path, file))]
-    for molecule in molecules:
-        xyz_file_generatonr(molecule)
+    xyz_file_generatonr(files_path)
+    
+    return
 
 def get_angle_between_coordinates(p1, p2): ###works, name in R: 'angle' 
     dot_product=np.dot(p1, p2)
@@ -51,8 +51,8 @@ def get_angle_between_coordinates(p1, p2): ###works, name in R: 'angle'
 if __name__=='__main__':
 ##    xyz_file_generator_library(r'C:\Users\עדן\Documents\GitHub\learning_python','new_directory')
         
-    df=xyz_file_generatonr(r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python')
+    xyz_file_generator_library(r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python','new_directory')
     
-    print(df)
+    
   
 

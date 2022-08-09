@@ -276,7 +276,7 @@ def search_multiple_vaules_in_columns(dataframe, column_names, column_values):
         total_mask=total_mask&mask
     return total_mask
 
-def dataframe_to_xyz(dataframe, output_name='xyz file', comment_line='XYZ file'):
+def dataframe_to_xyz(dataframe, output_name, comment_line=None):
     """
 
      a function that recieves a dataframe, output name, and comment line and creates a xyz type file.
@@ -298,11 +298,11 @@ def dataframe_to_xyz(dataframe, output_name='xyz file', comment_line='XYZ file')
     number_of_atoms=dataframe.shape[0]
     atoms_np_array=dataframe.to_numpy()
     with open(output_name, 'w') as xyz_file:
-        xyz_file.write("{}\n{}\n".format(number_of_atoms, comment_line))
+        xyz_file.write("{}\n{}\n".format(comment_line, number_of_atoms))
         for atom_np_array in atoms_np_array:
-           xyz_file.write("{:4} {:11.6f} {:11.6f} {:11.6f}\n".format(*atom_np_array))
+           xyz_file.write("{:4} {:11.6} {:11.6} {:11.6}\n".format(*atom_np_array))
 
-def change_filetype (filename,new_type):
+def change_filetype (filename,new_type='xyz'):
     """
     a function that recieves a file name, and a new type, and changes the type-ending of the file's name to the new one.
 
