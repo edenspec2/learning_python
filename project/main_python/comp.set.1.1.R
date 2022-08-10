@@ -17,7 +17,7 @@ xyz_file_generator <- function(dir) {
   options(scipen = 999)
   setwd(dir)
   unlink(list.files(pattern = '*.xyz'))
-  molecules <- list.files(full.names = F, recursive = F, pattern = "\\.csv$")
+  molecules <- list.files(full.names = F, recursive = F, pattern = "standard_")
   for (molecule in molecules) {
     xyz <- data.frame(read.csv(molecule, header = F, col.names = c('atom','x','y','z')))
     suppressMessages(xyz$atom <- plyr::mapvalues(xyz$atom,

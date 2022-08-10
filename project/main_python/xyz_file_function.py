@@ -60,7 +60,7 @@ def get_tabular_text_to_matrix(filename, encoding=None):
      
     """
     file_lines=get_file_lines(filename, encoding=encoding)
-    splitted_file_lines=[line.split(',')  for line in file_lines]
+    splitted_file_lines=[line.split(',')   for line in file_lines]
 
     return splitted_file_lines
 
@@ -276,7 +276,7 @@ def search_multiple_vaules_in_columns(dataframe, column_names, column_values):
         total_mask=total_mask&mask
     return total_mask
 
-def dataframe_to_xyz(dataframe, output_name, comment_line=None):
+def dataframe_to_xyz(dataframe, output_name, comment_line=''):
     """
 
      a function that recieves a dataframe, output name, and comment line and creates a xyz type file.
@@ -298,10 +298,14 @@ def dataframe_to_xyz(dataframe, output_name, comment_line=None):
     number_of_atoms=dataframe.shape[0]
     atoms_np_array=dataframe.to_numpy()
     with open(output_name, 'w') as xyz_file:
-        xyz_file.write("{}\n{}\n".format(comment_line, number_of_atoms))
+        xyz_file.write("{}\n{}\n".format(number_of_atoms, comment_line))
         for atom_np_array in atoms_np_array:
-           xyz_file.write("{:4} {:11.6} {:11.6} {:11.6}\n".format(*atom_np_array))
-
+            try:
+                xyz_file.write("{:1} {:11.20} {:11.20} {:11.20}".format(*atom_np_array))
+            except:
+                xyz_file.write("{:1}".format(*atom_np_array))
+                
+                
 def change_filetype (filename,new_type='xyz'):
     """
     a function that recieves a file name, and a new type, and changes the type-ending of the file's name to the new one.

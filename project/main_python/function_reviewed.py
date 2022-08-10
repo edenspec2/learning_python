@@ -19,7 +19,7 @@ import xyz_file_function as pl
 ##from learning-python.python_stuff.main.xyz_file_function import *
 
 
-def filename_to_dataframe(pdb_filename, columns=None):
+def csv_filename_to_dataframe(filename, columns=None):
     """UPDATED DOC
     a function that recieves a text and returns it as DataFrame.
 
@@ -53,7 +53,7 @@ def filename_to_dataframe(pdb_filename, columns=None):
     1    ATOM   3509        CA             THR  ...  135.043           1.00  11.70    C
     2    ATOM   3510         C             THR  ...  135.291           1.00  11.70    C 
     """
-    splitted_lines=pl.get_tabular_text_to_matrix(pdb_filename)
+    splitted_lines=pl.get_tabular_text_to_matrix(filename)
     my_df=pl.get_dataframe_from_splitted_lines(splitted_lines, columns=columns)
     return my_df
 

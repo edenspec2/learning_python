@@ -17,7 +17,7 @@ xyz_file_generator <- function(dir) {
   options(scipen = 999)
   setwd(dir)
   unlink(list.files(pattern = '*.xyz'))
-  molecules <- list.files(full.names = F, recursive = F, pattern = "\\.csv$")
+  molecules <- list.files(full.names = F, recursive = F, pattern = "standard_")
   for (molecule in molecules) {
     xyz <- data.frame(read.csv(molecule, header = F, col.names = c('atom','x','y','z')))
     suppressMessages(xyz$atom <- plyr::mapvalues(xyz$atom,
@@ -218,9 +218,9 @@ measure_cv <- function(formula, data, out.col, folds, iterations) {
 }
 
 sub_model <- function(data, out.col = dim(data)[2],
-                      min = 2, max = floor(dim(data)[1] / 5),
+                      min = 3, max = floor(dim(data)[1] / 5),
                       folds = nrow(data), iterations = 1,
-                      cutoff = 0.6, cross.terms = F) {
+                      cutoff = 0.85, cross.terms = F) {
   output <- stringr::str_c("`", names(data[out.col]), "`")
   vars <- names(data[, -out.col])
   for (i in 1:length(vars)) {
@@ -282,9 +282,7 @@ sub_model <- function(data, out.col = dim(data)[2],
   forms.cut[, 3] <- data.table::transpose(do.call(rbind, q2.list))
   forms.cut[, 4] <- data.table::transpose(do.call(rbind, mae.list))
   names(forms.cut)[3:4] <- c("Q.sq", "MAE")
-  forms.cut <- head(dplyr::arrange(forms.cut, desc(forms.cut$Q.sq)), 10)
-  forms.cut <- dplyr::mutate(forms.cut, Model = seq(1, nrow(forms.cut)))
-  return(forms.cut)
+  return(head(dplyr::arrange(forms.cut, desc(forms.cut$Q.sq)), 2))
 }
 
 ### Constructive functions ###
@@ -367,14 +365,14 @@ mol.info <- function(info_filename, vib_num_filename) {
 
 ### 2 Sterimol (paton.info & and paton.df - depricated -- in-house steRimol and steRimol.df)
 
-steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = NULL) {
+steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T) {
   tryCatch(
     expr = {
       origin <- as.numeric(unlist(strsplit(coordinates, " "))[[1]])
       direction <- as.numeric(unlist(strsplit(coordinates, " "))[[2]])
-      bondi <- data.frame(matrix(nrow = 14, ncol = 2))
-      bondi[, 1] <- c("H", "B", "C", "N", "O", "F", "Si", "P", "S", "Cl", "Br", "I", 'Co', 'Ni')
-      bondi[, 2] <- c(1.10, 1.92, 1.70, 1.55, 1.52, 1.47, 2.10, 1.80, 1.80, 1.75, 1.83, 1.98, 2.00, 2.00)
+      bondi <- data.frame(matrix(nrow = 12, ncol = 2))
+      bondi[, 1] <- c("H", "B", "C", "N", "O", "F", "Si", "P", "S", "Cl", "Br", "I")
+      bondi[, 2] <- c(1.10, 1.92, 1.70, 1.55, 1.52, 1.47, 2.10, 1.80, 1.80, 1.75, 1.83, 1.98)
       colnames(bondi) <- c("Atom", "Radius")
       Paton.Atypes <- data.frame(c("C", "C2", "C3", "C4", "C5/N5", "C6/N6", "C7", "C8",
                                    "H", "N", "C66", "N4", "O", "O2", "P", "S", 'S.O', "S1", "F", "Cl", "S4", "Br", "I"), 
@@ -431,15 +429,6 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
             }
           }
         }
-        remove.vec <- vector()
-        if (!is.null(drop)) {
-          for (i in 1:length(rlev)) {
-            if (any(as.character(paste('`', drop, '`', sep = '')) %in% rlev[[i]][[1]])) {
-              remove.vec <- append(remove.vec, i)
-            }
-          }
-          rlev <- rlev[-remove.vec]
-        }
         rlev <- rlev[grep(paste("`", direction, "`", sep = ""), rlev)]
         rlev_atoms <- as.numeric(stringr::str_extract_all(unique(unlist(rlev)), "[0-9]{1,3}"))
         substi <- substi[substi$rowname %in% rlev_atoms]
@@ -460,10 +449,10 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
       }
       from_source <- cbind(nms, from_source, nms.2)
       for (i in as.numeric(unique(as.vector(t(from_source[, -c(1, 4)]))))) {
-        if (all(i %in% from_source$V1 & from_source$atom[from_source$V1 == i] == "H")) {
+        if (i %in% from_source$V1 && from_source$atom[from_source$V1 == i] == "H") {
           from_source <- from_source[from_source$V1 != i, ]
         }
-        if (all(i %in% from_source$V2 & from_source$atom.2[from_source$V2 == i] == "H" & from_source$atom[from_source$V2 == i] %in% c("O", "N", "F"))) {
+        if (i %in% from_source$V2 && from_source$atom.2[from_source$V2 == i] == "H" && from_source$atom[from_source$V2 == i] %in% c("O", "N", "F")) {
           bonded_OH <- from_source$V1[from_source$V2 == i]
           for (j in bonded_OH) {
             bond.length <- sqrt(sum((substi[substi$rowname == i, 3:5] - substi[substi$rowname == j, 3:5])^2))
@@ -696,13 +685,12 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
     }
   )
 }
-
-steRimol.df <- function(path, radii = 'CPK', only.sub = T, drop = NULL) {
+steRimol.df <- function(path, radii = 'CPK', only.sub = T) {
   molecules <- list.dirs(full.names = F, recursive = F)
   coor.atoms <- readline("Primary axis along: ")
   steri.list <- list()
   for (molecule in molecules) {
-    steri.list[[match(molecule, molecules)]] <- steRimol(molecule, coor.atoms, radii, only.sub, drop)
+    steri.list[[match(molecule, molecules)]] <- steRimol(molecule, coor.atoms, radii, only.sub)
   }
   steri.dafr <- data.frame(data.table::rbindlist(steri.list))
   row.names(steri.dafr) <- molecules
@@ -937,92 +925,6 @@ npa_dipole.df <- function(path) {
 }
 
 diversitree::set.defaults(npa_dipole.df, getwd())
-
-npa_dipole_subunit <- function(mol.dir, coor.atoms, subunit) {
-  xyz_file_generator(mol.dir)
-  setwd(mol.dir)
-  atoms <- strsplit(coor.atoms, " ")
-  unlisted.atoms <- unlist(atoms)
-  numeric.atoms <- as.numeric(unlisted.atoms)
-  charges <- data.table::fread(list.files(pattern = 'nbo'))
-  charges[[1]] <- as.numeric(charges[[1]])
-  colnames(charges) <- "npa"
-  xyz <- data.table::fread(list.files(pattern = '.xyz'))
-  xyz <- xyz[, -1]
-  mag <- function(vector) {
-    sqrt(vector[[1]]^2 + vector[[2]]^2 + vector[[3]]^2)
-  }
-  if (length(numeric.atoms) == 4) {
-    new_origin <- (xyz[numeric.atoms[[1]], ] + xyz[numeric.atoms[[2]], ])/2
-    new_y <- as.numeric((xyz[numeric.atoms[[3]], ] - new_origin) /
-                          mag(xyz[numeric.atoms[[3]], ] - new_origin))
-    coplane <- as.numeric((xyz[numeric.atoms[[4]], ] - new_origin) /
-                            mag(xyz[numeric.atoms[[4]], ] - new_origin))
-  } else {
-    new_origin <- xyz[numeric.atoms[[1]], ]
-    new_y <- as.numeric((xyz[numeric.atoms[[2]], ] - new_origin) /
-                          mag(xyz[numeric.atoms[[2]], ] - new_origin))
-    coplane <- as.numeric((xyz[numeric.atoms[[3]], ] - new_origin) /
-                            mag(xyz[numeric.atoms[[3]], ] - new_origin))
-  }
-  
-  cross_y_coplane <- pracma::cross(coplane, new_y)
-  coef_mat <- aperm(array(c(
-    new_y,
-    coplane,
-    cross_y_coplane), dim = c(3, 3)))
-  
-  angle_new.y_coplane <- angle(coplane, new_y)
-  x_ang_new.y <- pi / 2
-  cop_ang_x <- angle_new.y_coplane - x_ang_new.y
-  result_vec <- c(0, cos(cop_ang_x), 0)
-  new_x <- solve(coef_mat, result_vec)
-  new_z <- pracma::cross(new_x, new_y)
-  new_basis <- aperm(array(c(new_x, new_y, new_z), dim = c(3, 3)))
-  
-  new_coordinates <- matrix(nrow = dim(xyz)[[1]], ncol = 3)
-  transformed_coordinates <- matrix(nrow = dim(xyz)[[1]], ncol = 3)
-  for (i in 1:dim(xyz)[[1]]) {
-    new_coordinates[i, ] <- as.numeric(xyz[i, ] - new_origin)
-    transformed_coordinates[i, ] <- aperm(new_basis %*% new_coordinates[i, ])
-  }
-  transformed_coordinates <- round(transformed_coordinates, 4)
-  
-  dip_comp_mat <- data.frame(cbind(transformed_coordinates, charges))
-  subatoms <- strsplit(subunit, " ")
-  unlisted.subatoms <- unlist(subatoms)
-  numeric.subatoms <- as.numeric(unlisted.subatoms)
-  dip_comp_mat <- dip_comp_mat[numeric.subatoms,]
-  dip_vec <- as.numeric(vector(length = 3))
-  for (i in 1:dim(dip_comp_mat)[[1]]) {
-    dip_comp_mat[i, 5] <- dip_comp_mat[i, 1] * dip_comp_mat[i, 4]
-    dip_comp_mat[i, 6] <- dip_comp_mat[i, 2] * dip_comp_mat[i, 4]
-    dip_comp_mat[i, 7] <- dip_comp_mat[i, 3] * dip_comp_mat[i, 4]
-    dip_vec[1] <- sum(dip_comp_mat[, 5])
-    dip_vec[2] <- sum(dip_comp_mat[, 6])
-    dip_vec[3] <- sum(dip_comp_mat[, 7])
-  }
-  vec_mag <- mag(dip_vec)
-  final <- data.frame(dip_vec[1], dip_vec[2], dip_vec[3], mag(dip_vec))
-  colnames(final) <- c("dipNPA_x_subunit", "dipNPA_y_subunit", "dipNPA_z_subunit", "totalNPA_subunit")
-  unlink(list.files(pattern = '.xyz'))
-  setwd("..")
-  return(final)
-}
-
-npa_dipole_subunit.df <- function(path) {
-  molecules <- list.dirs(recursive = F)
-  input <- readline('Enter atoms - origin atom, y axis atom and xy plane atom: ')
-  sub.atoms <- readline('Enter subunit atoms: ')
-  dipole.list <- list()
-  for (molecule in molecules) {
-    dipole.list[[match(molecule, molecules)]] <- round(npa_dipole_subunit(molecule, input, 
-                                                                          sub.atoms), 5)
-  }
-  dipole.dafr <- data.frame(data.table::rbindlist(dipole.list))
-  row.names(dipole.dafr) <- molecules
-  return(dipole.dafr)
-}
 
 dip.gaussian <- function(mol.dir, coor.atoms = '', center.of.mass = 'F', center.of.mass.substructure = 'F', sub.atoms = NULL) {
   setwd(mol.dir)
@@ -1713,8 +1615,8 @@ library(ggplot2)
 library(ggrepel)
 library(extrafont)
 
-model.info <- function(dataset, min = 2, max = floor(dim(mod_data)[1] / 5), leave.out = '', predict = F) {
-  print(dataset)
+model.info <- function(dataset, min = 3, max = floor(dim(mod_data)[1] / 5), leave.out = '', predict = F) {
+  cat(dataset)
   mod_data <- data.frame(data.table::fread(dataset, header = T, check.names = T))
   RN <- mod_data[,1]
   mod_data <- mod_data[,-1]
@@ -1726,140 +1628,52 @@ model.info <- function(dataset, min = 2, max = floor(dim(mod_data)[1] / 5), leav
   mod_data <- mod_data[row.names(mod_data) != leave.out, ]
   models <- sub_model(mod_data, min = min, max = max)
   tab <- knitr::kable(models)
-  print(tab)
-  what.model <- readline('Choose the model you would like to plot (line number): ')
-  what.model <- as.numeric(what.model)
-  mod.sum <- summary(lm(models[what.model, 1], mod_data))$coefficients
   cat('
-  Model Coefficients')
-  colnames(mod.sum)[4] <- 'p value'
-  k.mod <- knitr::kable(mod.sum)
+  
+Top Two Models By LOOCV
+      ')
+  print(tab)
+  mod.sum <- summary(lm(models[1, 1], mod_data))
+  k.mod <- knitr::kable(mod.sum$coefficients)
+  cat('
+Model Coefficients and Statistics
+      ')
   print(k.mod)
-  cv_3fold <- measure_cv(models[what.model,1], mod_data, dim(mod_data)[2], 3, 500)
+  cv_3fold <- measure_cv(models[1,1], mod_data, dim(mod_data)[2], 3, 500)
   dt3 <- data.frame(cv_3fold[[2]], cv_3fold[[1]])
   names(dt3) <- c('Q2', 'MAE')
-  cat('
-  3-fold CV')
   tab_dt3 <- knitr::kable(dt3)
+  cat('
+3-fold CV
+      ')
   print(tab_dt3)
-  cv_5fold <- measure_cv(models[what.model,1], mod_data, dim(mod_data)[2], 5, 1000)
+  cv_5fold <- measure_cv(models[1,1], mod_data, dim(mod_data)[2], 5, 1000)
   dt5 <- data.frame(cv_5fold[[2]], cv_5fold[[1]])
   names(dt5) <- c('Q2', 'MAE')
-  cat('
-  5-fold CV')
   tab_dt5 <- knitr::kable(dt5)
+  cat('
+5-fold CV
+      ')
   print(tab_dt5)
   if (predict == T) {
-    prediction <- predict(lm(models[what.model, 1], mod_data), pred.data)
+    prediction <- predict(lm(models[1, 1], mod_data), pred.data)
     real <- pred.data$output
     prd.tab <- data.frame(prediction, real)
     names(prd.tab) <- c('OOS Pred', 'OOS Measured')
     k.prd.tab <- knitr::kable(prd.tab)
+    cat('
+Out of Sample Prediction
+        ')
     print(k.prd.tab)
   }
   mod_data_unn <- data.frame(data.table::fread(dataset, header = T, check.names = T))
-  mod.sum.unnormalized <- summary(lm(models[what.model, 1], mod_data_unn))$coefficients
+  mod.sum.unnormalized <- summary(lm(models[1, 1], mod_data_unn))
   cat('
-  Unnormalized Data Model Coefficients')
-  colnames(mod.sum.unnormalized)[4] <- 'p value'
-  k.mod.unn <- knitr::kable(mod.sum.unnormalized)
+Unnormalized Data Model Coefficients
+      ')
+  k.mod.unn <- knitr::kable(mod.sum.unnormalized$coefficients)
   print(k.mod.unn)
-  
-  ## model.plot
-  info.table <- data.frame(matrix(ncol = 1, nrow = 4))
-  info.table[1,1] <- as.character(round(models[what.model, 2], 2))
-  info.table[2,1] <- as.character(round(models[what.model, 3], 2))
-  info.table[3,1] <- as.character(round(dt5[1, 1], 2))
-  info.table[4,1] <- as.character(round(dt3[1, 1], 2))
-  row.names(info.table) <-  c('R2', 'Q2_loo', 'Q2_5fold', 'Q2_3fold')
-  names(info.table) <- 'stats'
-  text1 <- paste(row.names(info.table)[1], info.table[1,1], sep = ' = ')
-  text2 <- paste(row.names(info.table)[2], info.table[2,1], sep = ' = ')
-  text3 <- paste(row.names(info.table)[3], info.table[3,1], sep = ' = ')
-  text4 <- paste(row.names(info.table)[4], info.table[4,1], sep = ' = ')
-  
-  equation <- list()
-  for (i in 2:nrow(mod.sum)) {
-    equation[i] <- ifelse(mod.sum[i,1] < 0, paste(round(mod.sum[i,1], 2), row.names(mod.sum)[i], sep = ' * '),
-                          paste(paste('+', round(mod.sum[i,1], 2), sep = ''), row.names(mod.sum)[i], sep = ' * '))
-  }
-  equation[1] <- as.character(round(mod.sum[1,1], 2))
-  equation <- paste(equation,  collapse = ' ')
-  
-  annotations <- stringr::str_c(c(equation, text1, text2, text3, text4), collapse = "\n")
-  
-  model = models[what.model, 1] 
-  data = mod_data
-  best.mod <- lm(model, data = data)
-  pred_interval <- predict(best.mod, newdata = data, interval = 'pre', level = 0.9)
-  plot.dat <- data.frame(cbind(data$output, pred_interval))
-  colnames(plot.dat) <- c('Measured', 'Predicted', 'lwr', 'upr')
-  rownames(plot.dat) <- row.names(data)
-  
-  row.names(plot.dat) <- stringr::str_replace(row.names(plot.dat),"o_",'2-')
-  row.names(plot.dat) <- stringr::str_replace(row.names(plot.dat),"m_",'3-')
-  row.names(plot.dat) <- stringr::str_replace(row.names(plot.dat),"p_",'4-')
-  row.names(plot.dat) <- stringr::str_replace(row.names(plot.dat),"o4-",'2,4-')
-  row.names(plot.dat) <- stringr::str_replace(row.names(plot.dat),"m3-",'3,3-')
-  
-  for (i in 1:nrow(plot.dat)) {
-    if (grepl('3-',row.names(plot.dat)[i])) {
-      plot.dat[i,5] <- 'meta'
-    }
-    if (grepl('2-',row.names(plot.dat)[i])) {
-      plot.dat[i,5] <- 'ortho'
-    }
-    if (grepl('basic',row.names(plot.dat)[i])) {
-      plot.dat[i,5] <- 'Ph'
-    }
-    if (grepl('4-',row.names(plot.dat)[i])) {
-      plot.dat[i,5] <- 'para'
-    }
-  }
-  
-  plot.dat <- dplyr::mutate(plot.dat, label = row.names(plot.dat))
-  colnames(plot.dat)[5] <- 'Position'
-  
-  plot <- ggplot(plot.dat, aes(x = Measured, y = Predicted)) +
-    geom_point(size = 2, shape = 18,aes(color = Position)) +
-    stat_smooth(aes(y = lwr), color = "cadetblue", linetype = "dashed",
-                se = F, method = 'lm', fullrange = T, size = 0.8) +
-    stat_smooth(aes(y = upr), color = "cadetblue", linetype = "dashed", 
-                se = F, method = 'lm', fullrange = T, size = 0.8) +
-    labs(x = 'Measured',y = 'Predicted') +
-    stat_smooth(method = 'lm',se = F, formula = y~x,
-                color = 'black',fullrange = T, linetype = 'dashed') +
-    theme(axis.line.x = element_line(size = 1, colour = "black"),
-          axis.line.y = element_line(size = 1, colour = "black"),
-          axis.text.x = element_text(colour = "black", size = 12,face = 'bold'),
-          axis.text.y = element_text(colour = "black", size = 12,face = 'bold'),
-          axis.title.x = element_text(colour = "black", size = 12,face = 'bold'),
-          axis.title.y = element_text(colour = "black", size = 12,face = 'bold'),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.border = element_blank(), panel.background = element_blank(),
-          legend.position = c(2,2)) +
-    scale_color_manual(values = c(Ph = "black", meta = 'tan1',
-                                  para = '#66a182',ortho = '#d1495b')) +
-    xlim(min(plot.dat[,3]), max(plot.dat[,4])) +
-    ylim(min(plot.dat[,3]), max(plot.dat[,4])) +
-    coord_fixed(ratio = 1) +
-    geom_text_repel(size = 3,
-                    aes(label = label),
-                    min.segment.length = Inf,
-                    seed = 42,
-                    point.padding = 0.4,
-                    segment.color = 'white',
-                    force_pull = 0.02,
-                    nudge_x = 0.022,
-                    direction = 'y') +
-    theme(text = element_text(family = 'Helvetica')) +
-    annotate('text',
-             x = min(plot.dat[,3]),
-             y = max(plot.dat[,2]), label = annotations,
-             parse = F,
-             hjust = "left", vjust = "top")
-  plot 
+  model.plot(model = models[1, 1], data = mod_data)
 }
 
 ##################################################
