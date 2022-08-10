@@ -17,7 +17,7 @@ import csv
 class Variables(Enum):
     ATOMIC_DICT={'atom':{ '1':'H', '5':'B', '6':'C', '7':'N', '8':'O', '9':'F', '14':'Si', '15':'P', '16':'S', '17':'Cl', '35':'Br', '53':'I', '27':'Co', '28':'Ni'}}
 
-def xyz_file_generatonr(my_path):###works, name in R:'xyz_file_generator'-currently the R function returns name without 'xyz_'.
+def xyz_file_generatonr(my_path):###works, name in R:'xyz_file_generator'-currently the R function generates filename without 'xyz_'.
     """
     a function that gets a directory path as my_path,makes xyz files from all csv files in the same directory.
     """
@@ -78,7 +78,7 @@ def get_angle_between_coordinates(p1, p2): ###works, name in R: 'angle'
     thetha=np.arccos(dot_product/(norm_x*norm_y))
     return thetha
                                                             #indexes=[2,4]
-def molecule_swapper(files_directory_path,molecule_file_name,indexes):###works, name in R:'swapper'
+def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###works, name in R:'swapper'
     """
     a function that gets directory path, molecule file name, and the indexes of the atoms to swap, and overwrite the xyz file with the swapped pair.
     """
@@ -89,7 +89,7 @@ def molecule_swapper(files_directory_path,molecule_file_name,indexes):###works, 
     index_2+=-1
     for molecule in list_of_molecules:
         if (molecule==molecule_file_name):
-            xyz_file=fr.filename_to_dataframe(molecule)
+            xyz_file=fr.csv_filename_to_dataframe(molecule)
             xyz_file.drop([0,1],axis=0,inplace=True)
             b, c = xyz_file.iloc[index_1], xyz_file.iloc[index_2]
             temp = xyz_file.iloc[index_1].copy()
@@ -97,6 +97,12 @@ def molecule_swapper(files_directory_path,molecule_file_name,indexes):###works, 
             xyz_file.iloc[index_2] = temp
             xyz.dataframe_to_xyz(xyz_file,molecule)
     return
+
+def get_sqrt_of_vector(vector):
+    return vector.astype(float).mean()
+
+def coordination_transformation(molecule_file_name,origin_atom,y_direction_atom,xy_plane_atom):
+    pass
     
 
         
@@ -104,12 +110,15 @@ def molecule_swapper(files_directory_path,molecule_file_name,indexes):###works, 
 
 if __name__=='__main__':
 ##    xyz_file_generator_library(r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python','new_directory') #works
-##    path=r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python\new_directory'
-##    change_file_name(path,'xyz_csv_file_for_r_1.xyz','xyz_csv_file_for_r_4.xyz')
-##    molecule_swapper(path,'xyz_csv_file_for_r_2.xyz',[2,4])
-##    os.chdir(path)
-##    df=fr.filename_to_dataframe('xyz_csv_file_for_r_2.xyz')
-##    df=xyz_to_ordered_DataFrame('xyz_csv_file_for_r_2.xyz')
+    path=r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python\new_directory'
+    change_file_name(path,'xyz_csv_file_for_r_1.xyz','xyz_csv_file_for_r_4.xyz')
+    molecule_atom_swapper(path,'xyz_csv_file_for_r_2.xyz',[2,4])
+    os.chdir(path)
+    df=fr.csv_filename_to_dataframe('xyz_csv_file_for_r_2.xyz')
+    df=xyz_to_ordered_DataFrame('xyz_csv_file_for_r_2.xyz')
+    three_molecules=df[['x','y','z']].iloc[3:6]
+    
+    print(three_molecules[0])
 
  
 
