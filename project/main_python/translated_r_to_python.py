@@ -117,8 +117,9 @@ if __name__=='__main__':
     df=fr.csv_filename_to_dataframe('xyz_csv_file_for_r_2.xyz')
     df=xyz_to_ordered_DataFrame('xyz_csv_file_for_r_2.xyz')
     three_molecules=df[['x','y','z']].iloc[3:6]
+    print(three_molecules)
     
-    print(three_molecules[0])
+    
 
  
 
