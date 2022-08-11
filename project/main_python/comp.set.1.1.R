@@ -152,7 +152,7 @@ coor.trans <- function(molecule, coor.atoms) {
     new_coordinates[i, ] <- as.numeric(xyz[i, 2:4] - new_origin)
     transformed_coordinates[i, ] <- aperm(new_basis %*% new_coordinates[i, ])
   }
-  transformed_coordinates <- round(transformed_coordinates, 4)
+  transformed_coordinates <- round(transformed_coordinates,4)
   elements <- xyz[, 1]
   transformed_coordinates <- cbind(elements, transformed_coordinates)
   num.atoms <- nrow(transformed_coordinates)

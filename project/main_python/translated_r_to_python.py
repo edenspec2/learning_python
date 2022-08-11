@@ -4,6 +4,7 @@ path_to_add=r'C:\Users\עדן\Documents\GitHub\learning_python\python_stuff'
 sys.path.insert(0, path_to_add)
 
 import pandas as pd
+pd.options.mode.chained_assignment = None
 import numpy as np
 import os
 import math
@@ -71,7 +72,7 @@ def change_file_name(files_directory_path,old_file_name,new_file_name):###works,
     
     return
 
-def get_angle_between_coordinates(p1, p2): ###works, name in R: 'angle' 
+def get_angle(p1, p2): ###works, name in R: 'angle' 
     dot_product=np.dot(p1, p2)
     norm_x=np.linalg.norm(p1)
     norm_y=np.linalg.norm(p2)
@@ -98,11 +99,56 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
             xyz.dataframe_to_xyz(xyz_file,molecule)
     return
 
-def get_sqrt_of_vector(vector):
-    return vector.astype(float).mean()
 
-def coordination_transformation(molecule_file_name,origin_atom,y_direction_atom,xy_plane_atom):
+def get_specific_atom_df(molecule_file_name):
     pass
+
+def get_norm(molecule):###help function
+    """
+    a function that gets xyz coordinates as dataframe and returns the sum of square roots.
+    """
+    norm=0
+    for i in range(0,len(molecule)):
+       norm+=(float(molecule[i]))**2
+    return math.sqrt(norm)
+
+                                                    #only the number of them
+def coordination_transformation(molecule_file_name,base_atoms_indexes):#origin_atom, y_direction_atom, xy_plane_atom
+    
+    indexes=np.array(base_atoms_indexes)-1
+    molecule=(xyz_to_ordered_DataFrame(molecule_file_name)).drop([0,1],axis=0)
+    if (len(indexes)==4):
+        new_origin=(molecule[['x','y','z']].iloc[indexes[0]].astype(float)+molecule[['x','y','z']].iloc[indexes[1]].astype(float))/2
+        new_y=(molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin))
+        coplane=(molecule[['x','y','z']].iloc[indexes[3]]-new_origin)-get_norm(((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)))
+    else:
+        new_origin=molecule[['x','y','z']].iloc[indexes[0]].astype(float)
+        new_y=(molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin))
+        coplane=((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)-get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)))
+    cross_y_plane=pd.Series(np.cross(coplane,new_y),index=['x','y','z'])
+    coef_mat=(pd.concat([new_y, coplane, cross_y_plane], axis=1)).T
+    angle_new_y_coplane=get_angle(coplane,new_y)
+    cop_ang_x=angle_new_y_coplane-(np.pi/2)
+    result_vector=[0,np.cos(cop_ang_x),0]
+    new_x=pd.Series(np.linalg.solve(coef_mat,result_vector),index=['x','y','z'])
+    new_z=pd.Series(np.cross(new_x,new_y),index=['x','y','z'])
+    new_basis=(pd.concat([new_x, new_y, new_z], axis=1)).T
+    new_coordinates=[]
+    transformed_coordinates=[]
+    for i in range(0,molecule.shape[0]):
+        x=(molecule[['x','y','z']].iloc[i].astype(float)-new_origin)
+        new_coordinates.append(x)
+        transformed_coordinates.append(np.dot(new_basis,x))
+        print(np.dot(new_basis,x))
+
+    transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4)
+    new_coordinates_df=pd.DataFrame(new_coordinates)
+    transformed_coordinates_df=pd.DataFrame(transformed_coordinates)
+    return transformed_coordinates
+        
+        
+     
+    
     
 
         
@@ -111,16 +157,24 @@ def coordination_transformation(molecule_file_name,origin_atom,y_direction_atom,
 if __name__=='__main__':
 ##    xyz_file_generator_library(r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python','new_directory') #works
     path=r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python\new_directory'
+    os.chdir(path)
     change_file_name(path,'xyz_csv_file_for_r_1.xyz','xyz_csv_file_for_r_4.xyz')
     molecule_atom_swapper(path,'xyz_csv_file_for_r_2.xyz',[2,4])
-    os.chdir(path)
-    df=fr.csv_filename_to_dataframe('xyz_csv_file_for_r_2.xyz')
-    df=xyz_to_ordered_DataFrame('xyz_csv_file_for_r_2.xyz')
-    three_molecules=df[['x','y','z']].iloc[3:6]
-    print(three_molecules.iloc[0])#first_molecule
+  
     
-    
+    df=(xyz_to_ordered_DataFrame('xyz_csv_file_for_r_4.xyz')).drop([0,1],axis=0)
+    three_molecules=df[['x','y','z']].iloc[3].astype(float)
 
+##    print(three_molecules.iloc[1])
+##    print((get_norm(three_molecules.iloc[1])))#first_molecule
+
+    print(coordination_transformation('xyz_csv_file_for_r_4.xyz',[1,2,3]))
+##    print(df[['x','y','z']].iloc[0])
+
+   
+              
+    
+    
  
 
 
