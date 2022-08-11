@@ -135,16 +135,16 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes):#origin_a
     new_basis=(pd.concat([new_x, new_y, new_z], axis=1)).T
     new_coordinates=[]
     transformed_coordinates=[]
-    for i in range(0,molecule.shape[0]):
+    for i in range(0,(molecule.shape[0]-1)):
         x=(molecule[['x','y','z']].iloc[i].astype(float)-new_origin)
         new_coordinates.append(x)
         transformed_coordinates.append(np.dot(new_basis,x))
-        print(np.dot(new_basis,x))
+        
 
     transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4)
     new_coordinates_df=pd.DataFrame(new_coordinates)
     transformed_coordinates_df=pd.DataFrame(transformed_coordinates)
-    return transformed_coordinates
+    return transformed_coordinates_array,coef_mat
         
         
      

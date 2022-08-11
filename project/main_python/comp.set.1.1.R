@@ -151,6 +151,7 @@ coor.trans <- function(molecule, coor.atoms) {
   for (i in 1:dim(xyz)[[1]]) {
     new_coordinates[i, ] <- as.numeric(xyz[i, 2:4] - new_origin)
     transformed_coordinates[i, ] <- aperm(new_basis %*% new_coordinates[i, ])
+    print(aperm(new_basis %*% new_coordinates[i, ]))
   }
   transformed_coordinates <- round(transformed_coordinates,4)
   elements <- xyz[, 1]
@@ -168,6 +169,7 @@ coor.trans <- function(molecule, coor.atoms) {
   new_xyz <- new_xyz[-1]
   new_xyz <- new_xyz[-length(new_xyz)]
   write(new_xyz, paste(tools::file_path_sans_ext(molecule), "_tc", ".xyz", sep = ""))
+
 }
 
 coor.trans.dir <- function(dir, coor.atoms){
