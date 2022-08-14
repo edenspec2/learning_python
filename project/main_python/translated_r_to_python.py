@@ -151,7 +151,7 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes):#origin_a
     with open(new_filename, 'w') as xyz_file:
         xyz_file.write("{}\n{}\n".format(transformed_array.shape[0],''))
         for atom in transformed_array:
-            xyz_file.write("{:} {:4} {:4} {:4}\n".format(*atom))
+            xyz_file.write("{:} {:1.4} {:1.4} {:1.4}\n".format(*atom))
     return 
 
      
@@ -167,7 +167,7 @@ def coordination_transformation_entire_dir(files_directory_path,base_atoms_index
     
 
 if __name__=='__main__':
-    xyz_file_generator_library(r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python','new_directory') #works
+##    xyz_file_generator_library(r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python','new_directory') #works
     path=r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python\new_directory'
     os.chdir(path)
 ##    change_file_name(path,'xyz_csv_file_for_r_1.xyz','xyz_csv_file_for_r_4.xyz')
