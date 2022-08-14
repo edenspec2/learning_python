@@ -304,6 +304,8 @@ def dataframe_to_xyz(dataframe, output_name, comment_line=''):
                 xyz_file.write("{:1} {:11.20} {:11.20} {:11.20}".format(*atom_np_array))
             except:
                 xyz_file.write("{:1}".format(*atom_np_array))
+
+               
                 
                 
 def change_filetype (filename,new_type='xyz'):
@@ -328,7 +330,7 @@ def change_filetype (filename,new_type='xyz'):
     
     """
     split_result=filename.split('.')
-    if new_type.startswith('.'):
+    if '.' in new_type:
         new_filename=split_result[0]+new_type
     else:
         new_filename=split_result[0]+'.'+new_type

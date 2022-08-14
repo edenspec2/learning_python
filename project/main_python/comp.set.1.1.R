@@ -151,7 +151,7 @@ coor.trans <- function(molecule, coor.atoms) {
   for (i in 1:dim(xyz)[[1]]) {
     new_coordinates[i, ] <- as.numeric(xyz[i, 2:4] - new_origin)
     transformed_coordinates[i, ] <- aperm(new_basis %*% new_coordinates[i, ])
-    print(aperm(new_basis %*% new_coordinates[i, ]))
+    
   }
   transformed_coordinates <- round(transformed_coordinates,4)
   elements <- xyz[, 1]
@@ -162,6 +162,7 @@ coor.trans <- function(molecule, coor.atoms) {
   m[is.na(m)] <- ""
   names(m) <- names(transformed_coordinates)
   transformed_coordinates <- rbind(m, transformed_coordinates)
+
   transformed_coordinates[transformed_coordinates == "0"] <- "0.0"
   new_xyz <- knitr::kable(transformed_coordinates,
                           format = "simple", row.names = F, col.names = NULL
@@ -169,7 +170,7 @@ coor.trans <- function(molecule, coor.atoms) {
   new_xyz <- new_xyz[-1]
   new_xyz <- new_xyz[-length(new_xyz)]
   write(new_xyz, paste(tools::file_path_sans_ext(molecule), "_tc", ".xyz", sep = ""))
-
+  print(coplane)
 }
 
 coor.trans.dir <- function(dir, coor.atoms){

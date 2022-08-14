@@ -30,16 +30,19 @@ def xyz_file_generatonr(my_path):###works, name in R:'xyz_file_generator'-curren
         new_filename=xyz.change_filetype(molecule)
         xyz.dataframe_to_xyz(xyz_file,new_filename)
 
-    return
+    return 
 
 def xyz_to_ordered_DataFrame(filename,columns=None):#my help function
     """
     a function witch gets a xyz file name and produces an organized dataframe.
-    this function is simillar to fr.csv_filename_to_dataframe with works good on csv files.
+    this function is simillar to fr.csv_filename_to_dataframe which works good on csv files.
     """
     split_lines=xyz.get_file_striped_lines(filename)
-    ordered_lines=[line.split(' ') for line in split_lines]
-    return pd.DataFrame(ordered_lines,columns=['atom','x','y','z']).fillna('')
+    
+    ordered_lines_2=[line.split(' ') for line in split_lines]
+
+    df=pd.DataFrame(ordered_lines_2,columns=['atom','x','y','z']).fillna('')
+    return df
     
 def move_xyz_files_directory(current_directory,new_directory):#my help function
     """
@@ -97,7 +100,7 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
             xyz_file.iloc[index_1] = c
             xyz_file.iloc[index_2] = temp
             xyz.dataframe_to_xyz(xyz_file,molecule)
-    return
+    return 
 
 
 def get_specific_atom_df(molecule_file_name):
@@ -117,17 +120,19 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes):#origin_a
     
     indexes=np.array(base_atoms_indexes)-1
     molecule=(xyz_to_ordered_DataFrame(molecule_file_name)).drop([0,1],axis=0)
+    molecule=molecule.reset_index()
     if (len(indexes)==4):
         new_origin=(molecule[['x','y','z']].iloc[indexes[0]].astype(float)+molecule[['x','y','z']].iloc[indexes[1]].astype(float))/2
         new_y=(molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin))
-        coplane=(molecule[['x','y','z']].iloc[indexes[3]]-new_origin)-get_norm(((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)))
+        coplane=((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)))
     else:
         new_origin=molecule[['x','y','z']].iloc[indexes[0]].astype(float)
         new_y=(molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin))
-        coplane=((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)-get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)))
+        coplane=((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)))
     cross_y_plane=pd.Series(np.cross(coplane,new_y),index=['x','y','z'])
     coef_mat=(pd.concat([new_y, coplane, cross_y_plane], axis=1)).T
     angle_new_y_coplane=get_angle(coplane,new_y)
+    new_origin=molecule[['x','y','z']].iloc[indexes[0]].astype(float) ### check with shahar cause this line make no sense for 4 atom coor. this line exists in R.
     cop_ang_x=angle_new_y_coplane-(np.pi/2)
     result_vector=[0,np.cos(cop_ang_x),0]
     new_x=pd.Series(np.linalg.solve(coef_mat,result_vector),index=['x','y','z'])
@@ -135,40 +140,49 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes):#origin_a
     new_basis=(pd.concat([new_x, new_y, new_z], axis=1)).T
     new_coordinates=[]
     transformed_coordinates=[]
-    for i in range(0,(molecule.shape[0]-1)):
+    for i in range(0,(molecule.shape[0])):
         x=(molecule[['x','y','z']].iloc[i].astype(float)-new_origin)
         new_coordinates.append(x)
         transformed_coordinates.append(np.dot(new_basis,x))
-        
-
     transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4)
-    new_coordinates_df=pd.DataFrame(new_coordinates)
-    transformed_coordinates_df=pd.DataFrame(transformed_coordinates)
-    return transformed_coordinates_array,coef_mat
-        
-        
+    atom_array=molecule['atom'].to_numpy()
+    transformed_array=np.column_stack((atom_array,transformed_coordinates_array))
+    new_filename=xyz.change_filetype(molecule_file_name,'_tc.xyz')
+    with open(new_filename, 'w') as xyz_file:
+        xyz_file.write("{}\n{}\n".format(transformed_array.shape[0],''))
+        for atom in transformed_array:
+            xyz_file.write("{:} {:4} {:4} {:4}\n".format(*atom))
+    return 
+
      
-    
+def coordination_transformation_entire_dir(files_directory_path,base_atoms_indexes):
+    os.chdir(files_directory_path)
+    list_of_molecules=[file for file in os.listdir(current_directory) if file.endswith('xyz')]
+    for molecule in list_of_molecules:
+        coordination_transformation(molecule,base_atoms_indexes)
+    os.chdir('\..')
     
 
         
     
 
 if __name__=='__main__':
-##    xyz_file_generator_library(r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python','new_directory') #works
+    xyz_file_generator_library(r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python','new_directory') #works
     path=r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python\new_directory'
     os.chdir(path)
-    change_file_name(path,'xyz_csv_file_for_r_1.xyz','xyz_csv_file_for_r_4.xyz')
-    molecule_atom_swapper(path,'xyz_csv_file_for_r_2.xyz',[2,4])
+##    change_file_name(path,'xyz_csv_file_for_r_1.xyz','xyz_csv_file_for_r_4.xyz')
+##    molecule_atom_swapper(path,'xyz_csv_file_for_r_1.xyz',[1,2])
   
     
-    df=(xyz_to_ordered_DataFrame('xyz_csv_file_for_r_4.xyz')).drop([0,1],axis=0)
-    three_molecules=df[['x','y','z']].iloc[3].astype(float)
-
+    df=xyz_to_ordered_DataFrame('xyz_csv_file_for_r_2.xyz')
+    
 ##    print(three_molecules.iloc[1])
 ##    print((get_norm(three_molecules.iloc[1])))#first_molecule
+    
+    print(coordination_transformation('xyz_csv_file_for_r_2.xyz',[2,3,4,5]))
 
-    print(coordination_transformation('xyz_csv_file_for_r_4.xyz',[1,2,3]))
+
+    
 ##    print(df[['x','y','z']].iloc[0])
 
    
