@@ -1,7 +1,7 @@
 
 import sys
 ##path_to_add=r'C:\Users\avishayk\Documents\GitHub\learning_python'
-path_to_add=r'C:\Users\עדן\Documents\GitHub\learning_python\python_stuff'
+path_to_add=r'C:\Users\edens\Documents\GitHub\learning_python\python_stuff'
 sys.path.insert(0, path_to_add)
 
 import pandas as pd
@@ -276,8 +276,8 @@ def coordination_transformation_entire_dir(files_directory_path,base_atoms_index
     
 
 if __name__=='__main__':
-    xyz_file_generator_library(r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python','new_directory') #works
-    path=r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python\new_directory'
+    xyz_file_generator_library(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python','new_directory') #works
+    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\new_directory'
     os.chdir(path)
 ##    change_file_name(path,'xyz_csv_file_for_r_1.xyz','xyz_csv_file_for_r_4.xyz')
 ##    molecule_atom_swapper(path,'xyz_csv_file_for_r_1.xyz',[1,2])
@@ -285,7 +285,7 @@ if __name__=='__main__':
     
     
     coordination_transformation('txt_csv_file_for_r_2.xyz',[2,3,4,5])
-    os.chdir(r'C:\Users\עדן\Documents\GitHub\learning_python\project\main_python')
+    os.chdir(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python')
     df=convert_csv_to_xyz_df('xyz_csv_file_for_r_1.csv')
     print(df)
     print(xyz_lib.XYZConstants.DF_COLUMNS.value)
