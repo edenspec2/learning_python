@@ -103,6 +103,15 @@ class XYZHandler():
         xyz_df=convert_csv_to_xyz_df(csv_filename)
         self.opened_xyz_files.append(xyz_df)
 
+def delete_type_files(files_directory_path,file_type='xyz'): ## my help function to delete xyz files
+    """
+    a function that gets a directory path and file type, and deletes all the files of said type.
+    """
+    os.chdir(files_directory_path)
+    list_of_molecules=[file for file in os.listdir(files_directory_path) if file.endswith(file_type)]
+    for molecule in list_of_molecules:
+        os.remove(os.path.join(files_directory_path,molecule))
+
 def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-currently the R function generates filename without 'xyz_'.
     """
     a function that gets a directory path as folder_path, makes xyz files from all csv files in the same directory.
@@ -114,7 +123,7 @@ def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-cur
     for csv_filename in list_of_csv_files:
         xyz_df=convert_csv_to_xyz_df(csv_filename)
         new_filename=xyz_lib.change_filetype(csv_filename, new_type=FileExtensions.XYZ.value)
-        xyz_lib.dataframe_to_xyz(xyz_df, new_filename)
+        xyz_lib.dataframe_to_xyz(xyz_df, new_filename.replace('xyz_','txt_'))
     # Should you return to the original directory?
     return 
 
@@ -148,10 +157,14 @@ def xyz_file_generator_library(files_directory_path, directory_name): ###works, 
     """
     A void function
     """
-    new_dir_path=os.path.join(files_directory_path,directory_name)
-    os.mkdir(new_dir_path)
-    xyz_file_generator(files_directory_path)
-    move_xyz_files_directory(files_directory_path,new_dir_path)
+    path=os.path.join(files_directory_path,directory_name)
+    try:
+        os.mkdir(path)
+        xyz_file_generatonr(files_directory_path)
+        move_xyz_files_directory(files_directory_path,path)
+    except FileExistsError:
+        xyz_file_generatonr(files_directory_path)
+        move_xyz_files_directory(files_directory_path,path)
     return
 
 def change_file_name(files_directory_path,old_file_name,new_file_name):###works, name in R: 'name_changer' 
@@ -256,7 +269,10 @@ def coordination_transformation_entire_dir(files_directory_path,base_atoms_index
     os.chdir('\..')
     
 
-        
+##def npa_dipole(files_directory_path, base_atoms_indexes, file_type='npa', center_of_mass=False):
+##    os.chdir(files_directory_path)
+##    atom_indexes=np.array(base_atoms_indexes)-1
+##    charges=fr.csv_filename_to_dataframe
     
 
 if __name__=='__main__':
@@ -275,13 +291,7 @@ if __name__=='__main__':
     print(coordination_transformation('xyz_csv_file_for_r_2.xyz',[2,3,4,5]))
 
 
-    
-##    print(df[['x','y','z']].iloc[0])
 
-   
-              
-    
-    
  
 
 
