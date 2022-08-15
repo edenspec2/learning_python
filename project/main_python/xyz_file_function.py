@@ -20,6 +20,45 @@ class FileExtensions(Enum):
     MOL='.mol'
     PDB='.pdb'
 
+class XYZConstants(Enum):
+    """
+    Constants related to XYZ file processing
+    """
+    DF_COLUMNS=['atom','x','y','z']
+
+def get_filename_list(file_extension):
+    """
+    The function gets a file extension as input and returns a list of all files in the working directory
+    ----------
+    Parameters
+    ----------
+    file_extension : str.
+        The wanted file extension like '.csv' or '.ppt'
+    -------
+    Returns
+    -------
+    list
+        A list of all files in the working directory with the chosen extension 
+    --------
+    Examples
+    --------
+    from os import listdir
+
+    all_files_in_dir=listdir()
+    print(all_files_in_dir)
+        ['0_1106253-mod-mod.xyz', '0_1106253-mod.xyz', '1106253.cif', '1109098.cif', '1_1106253-mod.xyz', 'centered_0_BASCIH.xyz', 'cif_handler.py']
+        
+    xyz_files_in_dir=get_filename_list('.xyz')
+    print(xyz_files_in_dir)
+        ['0_1106253-mod-mod.xyz', '0_1106253-mod.xyz', '1_1106253-mod.xyz', 'centered_0_BASCIH.xyz']
+    
+    cif_files_in_dir=get_filename_list('.cif')
+    print(cif_files_in_dir)
+        ['1106253.cif', '1109098.cif']    
+    """
+    from os import listdir
+    return [filename for filename in listdir() if filename.endswith(file_extension)]
+
 def get_file_lines(filename, encoding=None):
     """ 
     a function that recieves any text file and returns a string .
@@ -41,7 +80,7 @@ def get_file_lines(filename, encoding=None):
     return lines
 
     #old name - get instead of convert
-def convert_tabular_text_to_matrix(filename, encoding=None):
+def convert_tabular_text_to_matrix(filename, encoding=None, spliters=(',')):
     """ UPDATE DOC
     a function that recieves a tabular text file and returns a list as an iterator object .
 
@@ -75,7 +114,12 @@ def convert_tabular_text_to_matrix(filename, encoding=None):
      
     """
     file_lines=get_file_lines(filename, encoding=encoding)
-    splitted_file_lines=[line.split(',')   for line in file_lines]
+    splitted_file_lines=[]
+    for line in file_lines:
+        split_results=[line.split(spliter) for spliter in spliter]
+        splitted_file_lines.append(split_results[0])
+    # Old version - didn't cover more than one split
+    # splitted_file_lines=[line.split(',') for line in file_lines]
     return splitted_file_lines
 
 def get_file_striped_lines(filename, encoding=None):
