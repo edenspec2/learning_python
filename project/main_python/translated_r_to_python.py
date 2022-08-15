@@ -134,7 +134,7 @@ def xyz_to_ordered_DataFrame(filename,columns=None):#my help function
     split_lines=[line.split(' ') for line in strip_lines]
     ordered_df=pd.DataFrame(split_lines,columns=xyz_lib.XYZConstants.DF_COLUMNS.value).fillna('')
     return ordered_df
-    
+
 def move_xyz_files_directory(current_directory,new_directory):#my help function
     """
     a function that moves xyz type files from one directory to another.
@@ -206,7 +206,7 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
     return 
 
 
-def get_specific_atom_df(molecule_file_name):
+def get_specific_molecule_df(molecule_file_name):
     pass
 
 def get_norm(molecule):###help function
@@ -219,7 +219,7 @@ def get_norm(molecule):###help function
     return math.sqrt(norm)
 
                                                     #only the number of them
-def coordination_transformation(molecule_file_name,base_atoms_indexes):#origin_atom, y_direction_atom, xy_plane_atom
+def coordination_transformation(molecule_file_name,base_atoms_indexes,return_variables=False):#origin_atom, y_direction_atom, xy_plane_atom
     
     indexes=np.array(base_atoms_indexes)-1
     molecule=(xyz_to_ordered_DataFrame(molecule_file_name)).drop([0,1],axis=0)
@@ -251,26 +251,32 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes):#origin_a
     atom_array=molecule['atom'].to_numpy()
     transformed_array=np.column_stack((atom_array,transformed_coordinates_array))
     new_filename=xyz_lib.change_filetype(molecule_file_name,'_tc.xyz')
-    with open(new_filename, 'w') as xyz_file:
-        xyz_file.write("{}\n{}\n".format(transformed_array.shape[0],''))
-        for atom in transformed_array:
-            xyz_file.write("{:} {:1.4} {:1.4} {:1.4}\n".format(*atom))
-    return 
+    if return_variables==False:
+        with open(new_filename, 'w') as xyz_file:
+            xyz_file.write("{}\n{}\n".format(transformed_array.shape[0],''))
+            for atom in transformed_array:
+                xyz_file.write("{:} {:1.4} {:1.4} {:1.4}\n".format(*atom))
+    else:
+        return transformed_array
+     
 
      
 def coordination_transformation_entire_dir(files_directory_path,base_atoms_indexes):
     os.chdir(files_directory_path)
-    list_of_molecules=[file for file in os.listdir(current_directory) if file.endswith('xyz')]
+    list_of_molecules=[file for file in os.listdir(files_directory_path) if file.endswith('xyz')]
     for molecule in list_of_molecules:
         coordination_transformation(molecule,base_atoms_indexes)
     os.chdir('\..')
     
     
-##def npa_dipole(files_directory_path, base_atoms_indexes, file_type='npa', center_of_mass=False):
-##    os.chdir(files_directory_path)
-##    atom_indexes=np.array(base_atoms_indexes)-1
-##    charges=fr.csv_filename_to_dataframe
-
+def npa_dipole(files_directory_path, base_atoms_indexes, file_type='npa', center_of_mass=False):
+    os.chdir(files_directory_path)
+    atom_indexes=np.array(base_atoms_indexes)-1
+    
+    charges=fr.csv_filename_to_dataframe(xyz_lib.get_filename_list(xyz_lib.FileExtensions.CSV.value)[0]) ## why this way and not with file name
+    xyz_df_tc=coordination_transformation(xyz_lib.get_filename_list(xyz_lib.FileExtensions.CSV.value[1]),base_atoms_indexes,return_variables=True)
+    print(xyz_df_tc)
+    
         
         
     
@@ -287,13 +293,10 @@ if __name__=='__main__':
     coordination_transformation('txt_csv_file_for_r_2.xyz',[2,3,4,5])
     os.chdir(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python')
     df=convert_csv_to_xyz_df('xyz_csv_file_for_r_1.csv')
-    print(df)
-    print(xyz_lib.XYZConstants.DF_COLUMNS.value)
-   
+
+    os.chdir(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole')
+    print(xyz_lib.get_filename_list(xyz_lib.FileExtensions.CSV.value)[0])
+
+    npa_dipole(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole',[2,3,4])
               
-    
-
-
-##    print(convert_csv_to_xyz_df('xyz_csv_file_for_r_1.csv'))
-
 

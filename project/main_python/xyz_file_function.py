@@ -59,7 +59,7 @@ def get_filename_list(file_extension):
     from os import listdir
     return [filename for filename in listdir() if filename.endswith(file_extension)]
 
-def get_file_lines(filename, encoding=None):
+def get_file_lines(filename,file_path=None, encoding=None):
     """ 
     a function that recieves any text file and returns a string .
 
@@ -75,6 +75,7 @@ def get_file_lines(filename, encoding=None):
     lines:str, text file as string
 
     """
+    os.chdir(file_path)
     with open(filename, 'r', encoding=encoding) as f:
         lines=f.readlines()
     return lines
