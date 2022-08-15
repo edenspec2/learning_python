@@ -15,7 +15,7 @@ import os
 ##from learning_python.python_stuff.main.xyz_file_function import * # import all
 ##get_file_lines()
 
-import xyz_file_function as xyz_lib
+import xyz_file_function as pl
 ##from learning-python.python_stuff.main.xyz_file_function import *
 
 
@@ -53,8 +53,8 @@ def csv_filename_to_dataframe(filename, columns=None):
     1    ATOM   3509        CA             THR  ...  135.043           1.00  11.70    C
     2    ATOM   3510         C             THR  ...  135.291           1.00  11.70    C 
     """
-    splitted_lines=xyz_lib.convert_tabular_text_to_matrix(filename)
-    my_df=xyz_lib.get_dataframe_from_splitted_lines(splitted_lines, columns=columns)
+    splitted_lines=pl.get_tabular_text_to_matrix(filename)
+    my_df=pl.get_dataframe_from_splitted_lines(splitted_lines, columns=columns)
     return my_df
 
 
@@ -134,12 +134,12 @@ if __name__=='__main__':
         my_database=filename_to_dataframe(pdb_filename,columns=pdb_file_columns)
         normlize_point=my_database[['x','y','z']].astype(float).mean()
         amino_acid_chain, amino_acid_name, amino_acid_place=pdb_filename_to_identifiers(pdb_filename)
-        new_database=xyz_lib.customize_columns(my_database,specific_columns)
-        total_mask=xyz_lib.search_multiple_vaules_in_columns(new_database, column_names, [amino_acid_chain, amino_acid_name, amino_acid_place])
-        new_database.loc[:, ['x','y','z']]=xyz_lib.get_normalize_coordinates(new_database[['x','y','z']].copy(),normlize_point)
-        output_filename=xyz_lib.change_filetype(pdb_filename, 'xyz')
-        xyz_lib.dataframe_to_xyz(new_database[total_mask][['Atom','x','y','z']],output_filename)
-        new_database[total_mask][['Atom','x','y','z']].to_csv(xyz_lib.change_filetype(pdb_filename, 'csv'))
+        new_database=pl.customize_columns(my_database,specific_columns)
+        total_mask=pl.search_multiple_vaules_in_columns(new_database, column_names, [amino_acid_chain, amino_acid_name, amino_acid_place])
+        new_database.loc[:, ['x','y','z']]=pl.get_normalize_coordinates(new_database[['x','y','z']].copy(),normlize_point)
+        output_filename=pl.change_filetype(pdb_filename, 'xyz')
+        pl.dataframe_to_xyz(new_database[total_mask][['Atom','x','y','z']],output_filename)
+        new_database[total_mask][['Atom','x','y','z']].to_csv(pl.change_filetype(pdb_filename, 'csv'))
 ##        print(new_database[total_mask][['Atom','x','y','z']])
 
 
