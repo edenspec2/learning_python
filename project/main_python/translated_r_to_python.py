@@ -10,7 +10,7 @@ import os
 import math
 from enum import Enum
 
-import xyz_file_function as xyz
+# import xyz_file_function as xyz_lib
 import function_reviewed as fr
 import csv
 
@@ -18,26 +18,31 @@ import csv
 class Variables(Enum):
     ATOMIC_DICT={'atom':{ '1':'H', '5':'B', '6':'C', '7':'N', '8':'O', '9':'F', '14':'Si', '15':'P', '16':'S', '17':'Cl', '35':'Br', '53':'I', '27':'Co', '28':'Ni'}}
 
-def xyz_file_generatonr(my_path):###works, name in R:'xyz_file_generator'-currently the R function generates filename without 'xyz_'.
+class XYZDataHolder():
+    """
+    A data container for XYZ files
+    """
+    pass
+
+def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-currently the R function generates filename without 'xyz_'.
     """
     a function that gets a directory path as my_path,makes xyz files from all csv files in the same directory.
     """
-    os.chdir(my_path)
-    list_of_molecules=[file for file in os.listdir(my_path) if file.endswith('csv')]
-    for molecule in list_of_molecules:
-        xyz_file=fr.csv_filename_to_dataframe(molecule,columns=['atom','x','y','z'])
+    os.chdir(folder_path)
+    list_of_csv_files=[file for file in os.listdir(folder_path) if file.endswith(FileExtensions.CSV.value)]
+    for csv_filename in csv_files:
+        xyz_file=fr.csv_filename_to_dataframe(csv_filename,columns=['atom','x','y','z'])
         xyz_file.replace(Variables.ATOMIC_DICT.value,inplace=True)
-        new_filename=xyz.change_filetype(molecule)
-        xyz.dataframe_to_xyz(xyz_file,new_filename)
-
-    return 
+        new_filename=xyz_lib.change_filetype(csv_filename)
+        xyz_lib.dataframe_to_xyz(xyz_file,new_filename)
+    return # is this just a void function?
 
 def xyz_to_ordered_DataFrame(filename,columns=None):#my help function
     """
     a function witch gets a xyz file name and produces an organized dataframe.
     this function is simillar to fr.csv_filename_to_dataframe which works good on csv files.
     """
-    split_lines=xyz.get_file_striped_lines(filename)
+    split_lines=xyz_lib.get_file_striped_lines(filename)
     
     ordered_lines_2=[line.split(' ') for line in split_lines]
 
@@ -59,7 +64,7 @@ def move_xyz_files_directory(current_directory,new_directory):#my help function
 def xyz_file_generator_library(files_directory_path, directory_name): ###works, name in R:'xyz_file_generator_library'
     path=os.path.join(files_directory_path,directory_name)
     os.mkdir(path)
-    xyz_file_generatonr(files_directory_path)
+    xyz_file_generator(files_directory_path)
     move_xyz_files_directory(files_directory_path,path)
     return
 
@@ -99,7 +104,7 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
             temp = xyz_file.iloc[index_1].copy()
             xyz_file.iloc[index_1] = c
             xyz_file.iloc[index_2] = temp
-            xyz.dataframe_to_xyz(xyz_file,molecule)
+            xyz_lib.dataframe_to_xyz(xyz_file,molecule)
     return 
 
 
@@ -147,7 +152,7 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes):#origin_a
     transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4)
     atom_array=molecule['atom'].to_numpy()
     transformed_array=np.column_stack((atom_array,transformed_coordinates_array))
-    new_filename=xyz.change_filetype(molecule_file_name,'_tc.xyz')
+    new_filename=xyz_lib.change_filetype(molecule_file_name,'_tc.xyz')
     with open(new_filename, 'w') as xyz_file:
         xyz_file.write("{}\n{}\n".format(transformed_array.shape[0],''))
         for atom in transformed_array:

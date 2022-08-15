@@ -5,6 +5,20 @@ sys.path.insert(0, path_to_add)
 import pandas as pd
 import numpy as np
 import os
+from enum import Enum
+
+class FileExtensions(Enum):
+    """
+    Hold commonly used file extensions
+    """
+    SMI='.smi'
+    XYZ='.xyz'
+    CSV='.csv'
+    ZIP='.zip'
+    PPT='.ppt'
+    CIF='.cif'
+    MOL='.mol'
+    PDB='.pdb'
 
 def get_file_lines(filename, encoding=None):
     """ 
@@ -26,7 +40,8 @@ def get_file_lines(filename, encoding=None):
         lines=f.readlines()
     return lines
 
-def get_tabular_text_to_matrix(filename, encoding=None):
+    #old name - get instead of convert
+def convert_tabular_text_to_matrix(filename, encoding=None):
     """ UPDATE DOC
     a function that recieves a tabular text file and returns a list as an iterator object .
 
@@ -52,7 +67,7 @@ def get_tabular_text_to_matrix(filename, encoding=None):
     ...
     ...
     
-    splitted_file_lines=get_tabular_text_to_matrix(file_lines)
+    splitted_file_lines=convert_tabular_text_to_matrix(file_lines)
     OUTPUT:
     [['ATOM', '3508', 'N', 'THR', 'B', '3', '120.279', '122.945', '136.234', '1.00', '11.70', 'N'],
     ['ATOM', '3509', 'CA', 'THR', 'B', '3', '119.995', '122.162', '135.043', '1.00', '11.70', 'C'],
@@ -61,7 +76,6 @@ def get_tabular_text_to_matrix(filename, encoding=None):
     """
     file_lines=get_file_lines(filename, encoding=encoding)
     splitted_file_lines=[line.split(',')   for line in file_lines]
-
     return splitted_file_lines
 
 def get_file_striped_lines(filename, encoding=None):
@@ -305,9 +319,7 @@ def dataframe_to_xyz(dataframe, output_name, comment_line=''):
             except:
                 xyz_file.write("{:1}".format(*atom_np_array))
 
-               
-                
-                
+                               
 def change_filetype (filename,new_type='xyz'):
     """
     a function that recieves a file name, and a new type, and changes the type-ending of the file's name to the new one.
