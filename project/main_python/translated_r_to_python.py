@@ -106,6 +106,7 @@ class XYZHandler():
 def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-currently the R function generates filename without 'xyz_'.
     """
     a function that gets a directory path as folder_path, makes xyz files from all csv files in the same directory.
+    This is a void function
     """
     os.chdir(folder_path)
     list_of_csv_files=get_filename_list(file.endswith(FileExtensions.CSV.value))
@@ -115,7 +116,7 @@ def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-cur
         new_filename=xyz_lib.change_filetype(csv_filename, new_type=FileExtensions.XYZ.value)
         xyz_lib.dataframe_to_xyz(xyz_df, new_filename)
     # Should you return to the original directory?
-    return # is this just a void function?
+    return 
 
 def xyz_to_ordered_DataFrame(filename,columns=None):#my help function
     # Im sure that this fucntion is redundent
@@ -132,6 +133,7 @@ def move_xyz_files_directory(current_directory,new_directory):#my help function
     """
     a function that moves xyz type files from one directory to another.
     help function for xyz_file_generator_library to move files to the new directory created
+    A void function
     """
     os.chdir(current_directory)
     list_of_csv_files=get_filename_list(FileExtensions.CSV.value)
@@ -140,18 +142,22 @@ def move_xyz_files_directory(current_directory,new_directory):#my help function
         current_path=os.path.join(current_directory, csv_filename)
         new_path=os.path.join(new_directory, csv_filename)
         os.replace(current_path,new_path)
-    return # is this just a void function?
+    return
                        
 def xyz_file_generator_library(files_directory_path, directory_name): ###works, name in R:'xyz_file_generator_library'
-    path=os.path.join(files_directory_path,directory_name)
-    os.mkdir(path)
+    """
+    A void function
+    """
+    new_dir_path=os.path.join(files_directory_path,directory_name)
+    os.mkdir(new_dir_path)
     xyz_file_generator(files_directory_path)
-    move_xyz_files_directory(files_directory_path,path)
-    return # is this just a void function?
+    move_xyz_files_directory(files_directory_path,new_dir_path)
+    return
 
 def change_file_name(files_directory_path,old_file_name,new_file_name):###works, name in R: 'name_changer' 
     """
     a function that gets a directory of the desired file, the name of the file to change, and changes it to a new specified name
+    A void function
     """
     os.chdir(files_directory_path)
     list_of_molecules=[file for file in os.listdir(files_directory_path) ]
@@ -170,7 +176,8 @@ def get_angle(p1, p2): ###works, name in R: 'angle'
                                                             #indexes=[2,4]
 def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###works, name in R:'swapper'
     """
-    a function that gets directory path, molecule file name, and the indexes of the atoms to swap, and overwrite the xyz file with the swapped pair.
+    A function that gets directory path, molecule file name, and the indexes of the atoms to swap, and overwrite the xyz file with the swapped pair.
+    A void function
     """
     os.chdir(files_directory_path)
     list_of_molecules=[file for file in os.listdir(files_directory_path) if file.endswith('xyz')]
