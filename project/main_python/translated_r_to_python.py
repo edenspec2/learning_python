@@ -49,7 +49,9 @@ class GeneralConstants(Enum):
             'Am': 1.80, 'Cm': 1.69
     }
 
-    ATOMIC_NUMBERS ={'atom':{ '1':'H', '5':'B', '6':'C', '7':'N', '8':'O', '9':'F', '14':'Si', '15':'P', '16':'S', '17':'Cl', '35':'Br', '53':'I', '27':'Co', '28':'Ni'}}
+    ATOMIC_NUMBERS ={
+    'atom':{ '1':'H', '5':'B', '6':'C', '7':'N', '8':'O', '9':'F', '14':'Si',
+             '15':'P', '16':'S', '17':'Cl', '35':'Br', '53':'I', '27':'Co', '28':'Ni'}}
         
 
     ATOMIC_WEIGHTS = {
@@ -121,6 +123,7 @@ def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-cur
         xyz_df=convert_csv_to_xyz_df(csv_filename)
         new_filename=xyz_lib.change_filetype(csv_filename, new_type=xyz_lib.FileExtensions.XYZ.value)
         xyz_lib.dataframe_to_xyz(xyz_df, new_filename.replace('xyz_','txt_'))
+        os.chdir('\..') #check
     # Should you return to the original directory?
     return 
 
@@ -132,7 +135,8 @@ def xyz_to_ordered_DataFrame(filename,columns=None):#my help function
     """
     strip_lines=xyz_lib.get_file_striped_lines(filename)
     split_lines=[line.split(' ') for line in strip_lines]
-    ordered_df=pd.DataFrame(split_lines,columns=xyz_lib.XYZConstants.DF_COLUMNS.value).fillna('')
+    ordered_df=pd.DataFrame(split_lines,columns=xyz_lib.XYZConstants.DF_COLUMNS.value).fillna('') #adding columns work
+    
     return ordered_df
 
 def move_xyz_files_directory(current_directory,new_directory):#my help function
@@ -220,10 +224,12 @@ def get_norm(molecule):###help function
 
                                                     #only the number of them
 def coordination_transformation(molecule_file_name,base_atoms_indexes,return_variables=False):#origin_atom, y_direction_atom, xy_plane_atom
-    
     indexes=np.array(base_atoms_indexes)-1
-    molecule=(xyz_to_ordered_DataFrame(molecule_file_name)).drop([0,1],axis=0)
-    molecule=molecule.reset_index()
+    try:
+        molecule=(xyz_to_ordered_DataFrame(molecule_file_name)).drop([0,1],axis=0)
+        molecule=molecule.reset_index()
+    except: #this way it works on csv file as well
+        molecule=convert_csv_to_xyz_df(molecule_file_name)
     if (len(indexes)==4):
         new_origin=(molecule[['x','y','z']].iloc[indexes[0]].astype(float)+molecule[['x','y','z']].iloc[indexes[1]].astype(float))/2
         new_y=(molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin))
@@ -257,7 +263,7 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes,return_var
             for atom in transformed_array:
                 xyz_file.write("{:} {:1.4} {:1.4} {:1.4}\n".format(*atom))
     else:
-        return transformed_array
+        return transformed_coordinates_array
      
 
      
@@ -269,20 +275,50 @@ def coordination_transformation_entire_dir(files_directory_path,base_atoms_index
     os.chdir('\..')
     
     
-def npa_dipole(files_directory_path, base_atoms_indexes, file_type='npa', center_of_mass=False):
-    os.chdir(files_directory_path)
+def get_npa_dipole(molecule_dir_path, base_atoms_indexes, file_type='npa', center_of_mass=False):##working
+    """
+    Parameters
+    ----------
+    molecule_dir_path:
+        path to molecule directory- should containg molecule csv file and matching dipole csv file.
+    base_atoms_indexes : list
+        indexes of atoms in file, works with 3 or 4 numbers. example:[2,3,4].
+    file_type : stf, optional
+        DESCRIPTION. The default is 'npa'.currently not relevant here(R-list.files) *check
+    center_of_mass : bool, optional
+        currently not relevant.
+
+    Returns
+    -------
+    dip_df : pd.DataFrame
+        output:      dip_x     dip_y     dip_z     total
+                0  0.097437 -0.611775  0.559625  0.834831
+    """
+    os.chdir(molecule_dir_path)
     atom_indexes=np.array(base_atoms_indexes)-1
+    charges=fr.csv_filename_to_dataframe(xyz_lib.get_filename_list('npa')[0]).astype(float) 
+    xyz_df_tc=pd.DataFrame(coordination_transformation(xyz_lib.get_filename_list('xyz_')[0],atom_indexes,return_variables=True)) 
+    dip_comp_mat=pd.concat([xyz_df_tc,charges],axis=1).astype(float)
+    dip_comp_mat.columns = range(dip_comp_mat.shape[1])
+    dip_vector=[]
+    dip_comp_mat[4],dip_comp_mat[5],dip_comp_mat[6]=0,0,0
+    for i in range(0,dip_comp_mat.shape[0]):
+        dip_comp_mat[4].iloc[i]=dip_comp_mat[0].iloc[i]*dip_comp_mat[3].iloc[i]
+        dip_comp_mat[5].iloc[i]=dip_comp_mat[1].iloc[i]*dip_comp_mat[3].iloc[i]
+        dip_comp_mat[6].iloc[i]=dip_comp_mat[2].iloc[i]*dip_comp_mat[3].iloc[i]
+    for i in range(4,7):
+        dip_vector.append(sum(dip_comp_mat[i]))
+    vec_norm=get_norm(dip_vector)
+    data=[[dip_vector[0]],[dip_vector[1]],[dip_vector[2]],[vec_norm]]
+    dip_df=pd.DataFrame(data,index=['dip_x','dip_y','dip_z','total']).T
     
-    charges=fr.csv_filename_to_dataframe(xyz_lib.get_filename_list(xyz_lib.FileExtensions.CSV.value)[0]) ## why this way and not with file name
-    xyz_df_tc=coordination_transformation(xyz_lib.get_filename_list(xyz_lib.FileExtensions.CSV.value[1]),base_atoms_indexes,return_variables=True)
-    print(xyz_df_tc)
     
-        
+    return dip_df
         
     
 
 if __name__=='__main__':
-    xyz_file_generator_library(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python','new_directory') #works
+    # xyz_file_generator_library(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python','new_directory') #works
     path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\new_directory'
     os.chdir(path)
 ##    change_file_name(path,'xyz_csv_file_for_r_1.xyz','xyz_csv_file_for_r_4.xyz')
@@ -292,11 +328,9 @@ if __name__=='__main__':
     
     coordination_transformation('txt_csv_file_for_r_2.xyz',[2,3,4,5])
     os.chdir(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python')
-    df=convert_csv_to_xyz_df('xyz_csv_file_for_r_1.csv')
-
     os.chdir(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole')
-    print(xyz_lib.get_filename_list(xyz_lib.FileExtensions.CSV.value)[0])
-
-    npa_dipole(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole',[2,3,4])
+    dipole_df=get_npa_dipole(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole',[2,3,4])
+    print(dipole_df)
               
 
+    

@@ -57,9 +57,9 @@ def get_filename_list(file_extension):
         ['1106253.cif', '1109098.cif']    
     """
     from os import listdir
-    return [filename for filename in listdir() if filename.endswith(file_extension)]
+    return [filename for filename in listdir() if file_extension in filename] ## changed to fit npa dipole
 
-def get_file_lines(filename,file_path=None, encoding=None):
+def get_file_lines(filename, encoding=None):
     """ 
     a function that recieves any text file and returns a string .
 
@@ -75,7 +75,6 @@ def get_file_lines(filename,file_path=None, encoding=None):
     lines:str, text file as string
 
     """
-    os.chdir(file_path)
     with open(filename, 'r', encoding=encoding) as f:
         lines=f.readlines()
     return lines

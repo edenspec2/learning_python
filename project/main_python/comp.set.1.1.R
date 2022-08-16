@@ -856,11 +856,13 @@ npa_dipole <- function(mol.dir, coor.atoms, type = 'npa', center.of.mass = F) {
   atoms <- strsplit(coor.atoms, " ")
   unlisted.atoms <- unlist(atoms)
   numeric.atoms <- as.numeric(unlisted.atoms)
-  charges <- data.table::fread("mol_npa_charges_a_eight.csv")
+  charges <- data.table::fread(list.files(pattern=type) ,
+                               sep = " ", header = F, fill = T
+  )
   print(charges)
   charges[[1]] <- as.numeric(charges[[1]])
   colnames(charges) <- "npa"
-  xyz <- data.frame(data.table::fread("xyz_csv_file_for_r_2.csv" ,
+  xyz <- data.frame(data.table::fread(list.files(pattern="xyz_") ,
                                       sep = " ", header = F, fill = T
   ))
   xyz <- apply(xyz, as.numeric)
