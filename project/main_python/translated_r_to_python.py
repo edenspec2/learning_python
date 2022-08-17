@@ -116,14 +116,12 @@ def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-cur
     This is a void function
     """
     os.chdir(folder_path)
-    list_of_csv_files=xyz_lib.get_filename_list(xyz_lib.FileExtensions.CSV.value)
-##    list_of_csv_files=[file for file in os.listdir(folder_path) if file.endswith(FileExtensions.CSV.value)]
+    list_of_csv_files=xyz_lib.get_filename_list('xyz_') #changed to 'xyz_' from .csv
     for csv_filename in list_of_csv_files:
         xyz_df=convert_csv_to_xyz_df(csv_filename)
         new_filename=xyz_lib.change_filetype(csv_filename, new_type=xyz_lib.FileExtensions.XYZ.value)
         xyz_lib.dataframe_to_xyz(xyz_df, new_filename.replace('xyz_','txt_'))
     os.chdir('../')
-    # Should you return to the original directory?
     return 
 
 def xyz_to_ordered_DataFrame(filename,columns=None):#my help function
@@ -135,7 +133,6 @@ def xyz_to_ordered_DataFrame(filename,columns=None):#my help function
     strip_lines=xyz_lib.get_file_striped_lines(filename)
     split_lines=[line.split(' ') for line in strip_lines]
     ordered_df=pd.DataFrame(split_lines,columns=xyz_lib.XYZConstants.DF_COLUMNS.value).fillna('') #adding columns work
-    
     return ordered_df
 
 def move_xyz_files_directory(current_directory,new_directory):#my help function
@@ -146,7 +143,6 @@ def move_xyz_files_directory(current_directory,new_directory):#my help function
     """
     os.chdir(current_directory)
     list_of_xyz_files=xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)
-##    list_of_molecules=[file for file in os.listdir(current_directory) if file.endswith(FileExtensions.CSV.value)]
     for xyz_filename in list_of_xyz_files:
         current_path=os.path.join(current_directory, xyz_filename)
         new_path=os.path.join(new_directory, xyz_filename)
@@ -202,7 +198,7 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
         if (molecule==molecule_file_name):
             xyz_file=fr.csv_filename_to_dataframe(molecule)
             xyz_file.drop([0,1],axis=0,inplace=True)
-            b, c = xyz_file.iloc[index_1], xyz_file.iloc[index_2]
+            c = xyz_file.iloc[index_2]
             temp = xyz_file.iloc[index_1].copy()
             xyz_file.iloc[index_1] = c
             xyz_file.iloc[index_2] = temp
@@ -356,7 +352,10 @@ xyz_molecule_2.csv  1.120679  2.329781 -1.416985  2.94816
     dipole_df=pd.concat(df_list, axis=0)
     return dipole_df.round(3)
 
-def get_angles_df(atoms_indexes): #gets a list of atom indexes
+def get_angles_df_from_csv(atoms_indexes): #gets a list of atom indexes
+    """
+    a function that gets 3/4 atom indexes, and returns a df of angles-either agnle or dihedral
+    """
     indexes=np.array(atoms_indexes)-1 #three atoms-angle four atoms-dihedral
     if len(indexes)==3:
         new_indexes=[indexes[0],indexes[1],indexes[1],indexes[2]]
@@ -365,17 +364,18 @@ def get_angles_df(atoms_indexes): #gets a list of atom indexes
         column_name=('Dihedral '+str(atoms_indexes))
     molecules=[molecule_dir for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)]
     angle_df=pd.DataFrame(columns=[column_name])
+    index_name=[]   
     for molecule in molecules:
         xyz_file_generator(os.path.abspath(molecule))
-        os.chdir(os.path.abspath(molecule))                                                         ##need fix-dont make xyz out of dipole
-        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[1])).drop([0,1],axis=0)
+        os.chdir(os.path.abspath(molecule))     
+                                 ##need fix-dont make xyz out of dipole/ currently npa-xsls type
+        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])).drop([0,1],axis=0)
         if(len(indexes)==3):
             first_bond=xyz_df[['x','y','z']].iloc[new_indexes[0]].astype(float)-xyz_df[['x','y','z']].iloc[new_indexes[1]].astype(float)
             second_bond=xyz_df[['x','y','z']].iloc[new_indexes[3]].astype(float)-xyz_df[['x','y','z']].iloc[new_indexes[2]].astype(float)
             angle_df.loc[len(angle_df.index)]=(get_angle(first_bond, second_bond))*(180/math.pi)
-            # angle_df['molecule']=xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[1] need fixing setting index name
-            # angle_df.set_index('molecule',inplace=True)
-            # angle_df.rename(index={(len(angle_df.index)-1):xyz_lib.get_filename_list('xyz_')[1]},inplace=True)
+            index_name.append(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])
+            
         else:
             first_bond=xyz_df[['x','y','z']].iloc[indexes[0]].astype(float)-xyz_df[['x','y','z']].iloc[indexes[1]].astype(float)
             second_bond=xyz_df[['x','y','z']].iloc[indexes[2]].astype(float)-xyz_df[['x','y','z']].iloc[indexes[1]].astype(float)
@@ -383,13 +383,15 @@ def get_angles_df(atoms_indexes): #gets a list of atom indexes
             first_cross=np.cross(first_bond,second_bond)
             second_cross=np.cross(third_bond,second_bond)
             angle_df.loc[len(angle_df.index)]=(get_angle(first_cross, second_cross))*(180/math.pi)
-            angle_df['molecule']=xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[1]
-            angle_df.set_index('molecule',inplace=True)
-            
-            
+            index_name.append(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])
+        delete_type_files() ## delete xyz files
         os.chdir('../')
-        
+    angle_df['molecule']=index_name
+    angle_df.set_index('molecule',inplace=True)
     return angle_df
+
+def get_angles_df_from_xyz(atoms_indexes): ### very similar to get_angles_df_from_csv only it works on xyz files
+    pass
             
     
 
@@ -401,7 +403,7 @@ if __name__=='__main__':
     # xyz_file_generator_library(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python','new_directory') #works
     path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole'
     os.chdir(path)
-    df=get_angles_df([2,3,4,6])
+    df=get_angles_df_from_csv([2,3,4])
     # df_2=get_npa_dipole_df(path)
 
 
