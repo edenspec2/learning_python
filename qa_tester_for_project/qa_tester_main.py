@@ -1,37 +1,8 @@
-import comp_set as cp
+import comp_set
 from enum import Enum
-from inspect import getmembers, isfunction
+
 import inspect as an
 import numpy as np
-
-
-
-class BuildingBlockFunctions(Enum):
-    """
-    FUNCTION_DICT-Holds a function referral dictionary, where every key is the name of the new function, and the value is the name of the old function
-    FUNCTION_USE_DICT-Holds a function referral dictionary, where every key is the name of the  function, and the value is the actual function
-    """
-    FUNCTION_DICT={'add_calc':'get_xyz_df',
-                   'multiply':'align_molecules'}
-    
-    FUNCTION_USE_DICT=dict(getmembers(cp, isfunction)) #(cp) ##this dict is updated when a qa_tester object is created
-
-
-
-#Assumption - Output -> Input in automation cycles
-class AutomationCycles(Enum):
-    """
-    Hold iterables of common automation cycles
-    Automation cycle is defined as a sequence of functions that generally run togather
-    """
-    COMP_SET=( 'align_molecules','get_xyz_df', 'run_calculation', 'get_ml_model')
-    MODEL=(cp)
-
-class ValidationData(Enum):
-    """
-    Holds validation referral dictionary, where every key is the name of the function, and the value is the input data to validate the function works well
-    """
-    DATA_DICT={} ##updated when a qa_tester object is created
 
 def get_module_function_dict(module):
     """
@@ -44,68 +15,55 @@ def get_module_function_dict(module):
     'get_xyz_df': <function get_xyz_df at 0x000002DCE73198B8>,
     'run_calculation': <function run_calculation at 0x000002DCE736AC18>}
     """
-    
+    from inspect import getmembers, isfunction
     function_dict=dict(getmembers(module, isfunction)) #getmembers()- return information on an object class,function etc, isfunction is the condition to return info only on functions
     return function_dict
 
-
-def get_old_building_block(building_block_name='function_name'):
+class BuildingBlockFunctions(Enum):
     """
-    The function gets a building block name and returns the corresponding old building block actual function 
+    NAME_TO_FUNCTION_NAME_DICT-Holds a function referral dictionary,
+    where every key is the name of the new function, and the value is the name of the old function
     """
-    old_building_clock= BuildingBlockFunctions.FUNCTION_DICT.value.get(building_block_name)
-    return BuildingBlockFunctions.FUNCTION_USE_DICT.value.get(old_building_clock)
+                                # Name in R : Name in python
+                                # Spoken name : Actual name
+    NAME_TO_FUNCTION_NAME_DICT={'xyz_file_generator' : 'xyz_file_generator',
+                                'xyz_file_generator_library' : 'xyz_file_generator_library',
+                                'name_changer' : 'change_file_name',
+                                'angle' : 'get_angle',
+                                'swapper' : 'molecule_atom_swapper',
+                                'corr_trans' : 'coordination_transformation',
+                                'dipole' : 'get_npa_dipole',
+                                }
 
-def get_old_building_block_name(building_block_name='function_name'):
+#Assumption - Output -> Input in automation cycles
+class AutomationCycles(Enum):
+    """
+    Hold iterables of common automation cycles
+    Automation cycle is defined as a sequence of functions that generally run togather
+    """
+    COMP_SET=('align_molecules','get_xyz_df', 'run_calculation', 'get_ml_model')
+    GET_ANGLE_FROM_XYZ=('xyz_file_generator', 'get_angle_between_two_atoms', 'get_angle')
+
+class ValidationData(Enum):
+    """
+    Holds validation referral dictionary, where every key is the name of the function, and the value is the input data to validate the function works well
+    """
+    DATA_DICT={} ##updated when a qa_tester object is created
+
+def get_building_block_name(building_block_name='function_name'):
     """
     The function gets a new building block name and returns the corresponding old building block function name
     """
-    return BuildingBlockFunctions.FUNCTION_DICT.value.get(building_block_name)
+    return BuildingBlockFunctions.NAME_TO_FUNCTION_NAME_DICT.value.get(building_block_name)
 
-
-
-
-## for use in check_building_block_solely
-def check_input_validity(building_block, validation_data):
+def get_building_block(building_block_name='function_name', module=None):
     """
-    a function that checks the validity of the arguments the function gets
+    The function gets a building block name and returns the corresponding old building block actual function 
     """
-    try:
-        value=building_block(validation_data)
-        return True
-    except:
-        try:
-           value=building_block(*validation_data)
-           return True
-        except TypeError:
-             return False
-    
-def check_building_block_solely(new_building_block_name, validation_data=None):
-    """
-    The function a new building block and validation data, and checks whether the operation of the new building block
-    is identical to the old building block it suppose to replace.
-    The function will return True if the operation is identical and False otherwise
-    """
-    ## works with iter or single value
-    old_building_block=get_old_building_block(new_building_block_name)
-    new_building_block=BuildingBlockFunctions.FUNCTION_USE_DICT.value.get(new_building_block_name)
-    try:
-        iter(validation_data)
-        if check_input_validity(old_building_block,(validation_data)):
-            if check_input_validity(new_building_block,(validation_data)):
-                return (old_building_block(*validation_data)==new_building_block(*validation_data))
-        else:
-            return False
-    except TypeError:
-        if check_input_validity(old_building_block,validation_data):
-                if check_input_validity(new_building_block,validation_data):
-                    return (old_building_block(validation_data)==new_building_block(validation_data))
-        else:
-            return False
-            
-    # Check all validation data on building_block_1 -> if failed -> return False
-    # Check all validation data on building_block_2 -> if failed -> return False
-    # If the results from both run are identical -> return True
+    building_block_actual_name=get_building_block_name(building_block_name)
+    function_dict=get_module_function_dict(module)
+    actual_building_block=function_dict.get(building_block_actual_name)
+    return actual_building_block
 
 def check_building_block_many_input(new_building_block_name, validation_data=None):# right now not working with (x,y) but work with ((x,y),(a,b))
     """
@@ -117,6 +75,48 @@ def check_building_block_many_input(new_building_block_name, validation_data=Non
         return reults
     except:
         return check_building_block_solely(new_building_block_name,validation_data)
+
+
+## for use in check_building_block_solely
+def check_input_validity(building_block, validation_data):
+    """
+    a function that checks the validity of the arguments the function gets
+    """
+    try:
+        value=building_block(*validation_data)
+        return True
+    except:
+        return False
+
+def relative_error(number_1, number_2):
+    return 100*abs(number_1-number_2)/min(number_1, number_2)
+
+def compare_numeric_results(number_1, number_2, error_percentage=1):
+    if relative_error(number_1, number_2)<=error_percentage:
+        return True
+    return False
+
+# Assumes that the output types is identical
+def compare_output_results(output_1, output_2, error_percentage=1):
+    if isinstance(output_1, float) or isinstance(output_1, int): 
+        return compare_numeric_results(output_1, output_2, error_percentage)
+            
+def check_building_block_solely(new_building_block_name, new_building_block, validation_data=None, module=None):
+    """
+    The function a new building block and validation data, and checks whether the operation of the new building block
+    is identical to the old building block it suppose to replace.
+    The function will return True if the operation is identical and False otherwise
+    """
+    ## works with iter or single value
+    # Check all validation data on building_block_1 -> if failed -> return False
+    # Check all validation data on building_block_2 -> if failed -> return False
+    # If the results from both run are identical -> return True
+    old_building_block=get_building_block(new_building_block_name, module)
+    if check_input_validity(old_building_block,(validation_data)):
+        if check_input_validity(new_building_block,(validation_data)):
+            return compare_output_results(old_building_block(*validation_data), new_building_block(*validation_data))
+    else:
+        return False
 
 def get_new_automation_cycle_test(new_building_block_name,automation_cycle):
     """
@@ -151,41 +151,13 @@ def run_automation_cycle(module, automation_cycle, validation_data):
     goes trough every function in the automation_cycle, where the output of the first function is
     the output of the next function and so on..
     """
-    function_dict=get_module_function_dict(module
+    function_dict=get_module_function_dict(module)
     first_function=function_dict.get(automation_cycle[0])
-    try:
-        iter(validation_data)
-        mid_results=first_function(*validation_data)
-        for function_name in automation_cycle[1:]:
-            actual_function=function_dict.get(function_name)
-            mid_results=actual_function(mid_results)
-    except:
-        mid_results=first_function(validation_data)
-        for function_name in automation_cycle[1:]:
-            actual_function=function_dict.get(function_name)
-            mid_results=actual_function(mid_results)
+    mid_results=first_function(*validation_data)
+    for function_name in automation_cycle[1:]:
+        actual_function=function_dict.get(function_name)
+        mid_results=actual_function(mid_results)
     return mid_results
-
-def run_new_automation_cycle(module_dict, automation_cycle, validation_data):
-    """
-    goes trough every function in the automation_cycle, the difference is it gets a module dictionary
-    for use when integrating building block in automation cycle
-    """
-    function_dict=module_dict
-    first_function=function_dict.get(automation_cycle[0])
-    try:
-        iter(validation_data)
-        mid_results=first_function(*validation_data) #
-        for function_name in automation_cycle[1:]:
-            actual_function=function_dict.get(function_name)
-            mid_results=actual_function(mid_results)
-    except:
-        mid_results=first_function(validation_data) 
-        for function_name in automation_cycle[1:]:
-            actual_function=function_dict.get(function_name)
-            mid_results=actual_function(mid_results)
-    return mid_results
-    
 
 def check_building_block_integration(module, new_building_block_name, automation_cycle,validation_data): 
     """
@@ -195,10 +167,11 @@ def check_building_block_integration(module, new_building_block_name, automation
     use dictionary of new and old names to change between the 
     """
     automated_results=run_automation_cycle(module, automation_cycle,validation_data)
-    new_automated_cycle=get_new_automation_cycle_test(new_building_block_name,automation_cycle)
-    new_module_dic=get_new_module_dict_test(module,new_building_block_name)
-    new_automated_results=run_new_automation_cycle(new_module_dic,new_automated_cycle,validation_data)
-    return (all(automated_results==new_automated_results))
+    return automated_results
+##    new_automated_cycle=get_new_automation_cycle_test(new_building_block_name,automation_cycle)
+##    new_module_dic=get_new_module_dict_test(module,new_building_block_name)
+##    new_automated_results=run_new_automation_cycle(new_module_dic,new_automated_cycle,validation_data)
+##    return (all(automated_results==new_automated_results))
 
     # Since this runs will take time - consider saving the output of known cycles
     # Think of how to store the automation cycles validation data
@@ -211,7 +184,7 @@ class QATester():
     Consider check excuation times as well (solo run only?)
     Consider also doing the replacement if validation is ok - if so - leave testing results as documentatio
     """
-    def __init__(self, new_building_block_name, new_building_block):
+    def __init__(self, new_building_block_name, new_building_block, module):
         """
         Inital input:
         
@@ -224,55 +197,77 @@ class QATester():
         """
         self.new_building_block_name=new_building_block_name
         self.new_building_block=new_building_block
-        self.old_building_block=get_old_building_block(new_building_block_name)
-        self.old_building_block_name=get_old_building_block_name(new_building_block_name)
+        self.module=module
+##        self.function_dict=get_module_function_dict(module)
+        
+        self.old_building_block_name=get_building_block_name(new_building_block_name)
+        self.old_building_block=get_building_block(new_building_block_name, module)
+        
         
  
-        BuildingBlockFunctions.FUNCTION_USE_DICT.value.update({self.new_building_block_name:self.new_building_block})
+##        BuildingBlockFunctions.FUNCTION_USE_DICT.value.update({self.new_building_block_name:self.new_building_block})
 
                     
-        ValidationData.DATA_DICT.value.update({self.new_building_block_name:self.new_building_block.__code__.co_varnames})
-        ValidationData.DATA_DICT.value.update({self.old_building_block_name:self.old_building_block.__code__.co_varnames})
+##        ValidationData.DATA_DICT.value.update({self.new_building_block_name:self.new_building_block.__code__.co_varnames})
+##        ValidationData.DATA_DICT.value.update({self.old_building_block_name:self.old_building_block.__code__.co_varnames})
         
         
         
-    def test_building_block(self,module,validation_data):
+    def test_building_block(self,validation_data):
         """
         The method tests the building block both individually and as part of the automation cycles it intends to replace.
         """
-        test_results=[] #[True, False, ..] for every QA test ran /// works
-        test_results.append(check_building_block_solely(self.new_building_block_name,validation_data))
-        for automation_cycle in AutomationCycles:
-            for single_block in automation_cycle.value:
-                if BuildingBlockFunctions.FUNCTION_DICT.value.get(self.new_building_block_name) == single_block:
-                    test_results.append(check_building_block_integration(module,self.new_building_block_name, automation_cycle.value, validation_data))
+        test_results=[] #[True, False, ..] for every QA test ran
+        test_results.append(check_building_block_solely(self.new_building_block_name, self.new_building_block, validation_data, self.module))
+##        for automation_cycle in AutomationCycles:
+##            for single_block in automation_cycle.value:
+##                if BuildingBlockFunctions.FUNCTION_DICT.value.get(self.new_building_block_name) == single_block:
+##                    test_results.append(check_building_block_integration(module,self.new_building_block_name, automation_cycle.value, validation_data))
         return all(test_results)
 
-def test_function_1(x):
-
-    return x+5
 def test_function_2(x,y):
     return x*y
-
+def test_function_1(x):
+    return x+5
     
 if __name__=='__main__':
-    new_building_block_name='add_calc'
-    qa_tester=QATester(new_building_block_name,test_function_1)
-    second_qa_tester=QATester('multiply',test_function_2)
-    building_block_1=test_function_1
-    building_block_2=test_function_2
-    function_dict=get_module_function_dict(cp)
-    first_function=function_dict.get(AutomationCycles.COMP_SET.value[0])
-    second_function=function_dict.get(AutomationCycles.COMP_SET.value[1])
-##
-    automation_cycle=AutomationCycles.COMP_SET.value
-    validation_data_1=((2,-2),(4,5))
-    validation_data_2=(4,2)
-    validation_data_3=(2)
+    new_building_block_name='angle'
+    def calc_angle(r_ij, r_kj):
+        from scipy.spatial.distance import cosine
+##        r_ij = xyzarr[i] - xyzarr[j]
+##        r_kj = xyzarr[k] - xyzarr[j]
+        cosine_theta = cosine(r_ij,r_kj)
+        theta = np.arccos(1-cosine_theta)
+        return 	theta
 
-    print(check_building_block_many_input(second_qa_tester.new_building_block_name,validation_data_1))
-    print(second_qa_tester.test_building_block(cp,(2,3)))
-##    print(second_qa_tester.test_building_block(cp,3)) #not working because the order of comp_set
+    i_x_y_z=np.array([0, 0, 0.39263333])
+    j_x_y_z=np.array([0, 0.75545, -0.19631667])
+    k_x_y_z=np.array([0, -0.75545, -0.19631667])
+    r_ij=i_x_y_z-j_x_y_z
+    r_kj=k_x_y_z-j_x_y_z
+    validation_data=(r_ij, r_kj)
+    validation_result=37.94003
+
+    import sys
+    folder_path=r'C:\Users\\itaro\OneDrive\Documents\GitHub\learning_python\project\main_python.'
+    sys.path.insert(0, folder_path)
+    import translated_r_to_python as base_module
+    function_module=base_module
+
+    qa_tester=QATester(new_building_block_name=new_building_block_name,
+                       new_building_block=calc_angle, #test_function_1
+                       module=base_module,
+                       )
+    print(get_module_function_dict(base_module).keys())
+##    print(qa_tester.test_building_block(validation_data))
+
+
+##    validation_data_1=((2,-2),(4,5))
+##    validation_data_2=(4,2)
+##    validation_data_3=(2)
+
+##    print(qa_tester.test_building_block(comp_set,(2,3)))
+
 
 
 
