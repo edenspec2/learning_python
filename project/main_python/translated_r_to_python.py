@@ -393,7 +393,57 @@ def get_angles_df_from_csv(atoms_indexes): #gets a list of atom indexes
 def get_angles_df_from_xyz(atoms_indexes): ### very similar to get_angles_df_from_csv only it works on xyz files
     pass
             
-    
+
+def get_bond_lengths(atom_pairs): ##creates xyz from csv, input as '2 3 4 5 6'
+    pairs=np.array([atom_pairs.split()[i:i+2] for i in range(0,len(atom_pairs.split()),2)],dtype=int)
+    molecules=[molecule_dir for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)]    
+    for molecule in molecules:
+        xyz_file_generator(os.path.abspath(molecule))
+        os.chdir(os.path.abspath(molecule))
+        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])).drop([0,1],axis=0)
+        dist_list=[]
+        for i in range(0,len(pairs)):
+            dist_list.append(get_norm(xyz_df[['x','y','z']].iloc[pairs[i][0]].astype(float)-xyz_df[['x','y','z']].iloc[pairs[i][1]].astype(float)))
+        pairs_df=pd.DataFrame(dist_list)
+        delete_type_files() ## delete xyz files
+        os.chdir('../')
+    return pairs_df
+            
+# bond.lengths <- function(atom.pairs) {
+#   bonds.vec <- strsplit(atom.pairs, " ")
+#   unlisted.bvec <- unlist(bonds.vec)
+#   numeric.bvec <- as.numeric(unlisted.bvec)
+#   paired <- split(
+#     numeric.bvec,
+#       ceiling(seq_along(numeric.bvec) / 2)
+#   )
+#   molecules <- list.dirs(full.names = F,recursive = F)
+#   mag <- function(vector) {
+#     sqrt(vector[[1]]^2 + vector[[2]]^2 + vector[[3]]^2)
+#   }
+#   dist.df <- data.frame(matrix(ncol = length(paired), nrow = length(molecules)))
+#   names(dist.df) <- stringr::str_replace(as.character(paired),'c','Dist')
+#   for (molecule in molecules) {
+#     xyz_file_generator(molecule)
+#     setwd(molecule)
+#     xyz <- data.table::fread(list.files(pattern = '.xyz'))
+#     dist.list <- data.frame(matrix(ncol = length(paired), nrow = 1))
+#     for (i in 1:length(paired)) {
+#       dist.list[i] <- mag(xyz[paired[[i]][1], 2:4] - xyz[paired[[i]][2], 2:4])
+#     }
+#     names(dist.list) <- paired
+#     dist.df[which(molecules == stringr::str_remove(molecule,'/')), ] <- dist.list
+#     unlink(list.files(pattern = '.xyz'))
+#     setwd('..')
+#   }
+#   for (file in list.files(full.names = F, recursive = F)) {
+#     setwd(file)
+#     unlink(list.files(pattern = ".xyz"))
+#     setwd('..')
+#   }
+#   row.names(dist.df) <- molecules
+#   return(dist.df)
+# }
 
 
         
@@ -404,7 +454,8 @@ if __name__=='__main__':
     path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole'
     os.chdir(path)
     df=get_angles_df_from_csv([2,3,4])
-    # df_2=get_npa_dipole_df(path)
 
+    df2=get_bond_lengths('2 3 4 5 6 7')
+    
 
     
