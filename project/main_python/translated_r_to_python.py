@@ -370,6 +370,7 @@ def get_angles_df_from_csv(atoms_indexes): #gets a list of atom indexes
         os.chdir(os.path.abspath(molecule))     
                                  ##need fix-dont make xyz out of dipole/ currently npa-xsls type
         xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])).drop([0,1],axis=0)
+        xyz_df.reset_index()
         if(len(indexes)==3):
             first_bond=xyz_df[['x','y','z']].iloc[new_indexes[0]].astype(float)-xyz_df[['x','y','z']].iloc[new_indexes[1]].astype(float)
             second_bond=xyz_df[['x','y','z']].iloc[new_indexes[3]].astype(float)-xyz_df[['x','y','z']].iloc[new_indexes[2]].astype(float)
@@ -395,56 +396,24 @@ def get_angles_df_from_xyz(atoms_indexes): ### very similar to get_angles_df_fro
             
 
 def get_bond_lengths(atom_pairs): ##creates xyz from csv, input as '2 3 4 5 6'
-    pairs=np.array([atom_pairs.split()[i:i+2] for i in range(0,len(atom_pairs.split()),2)],dtype=int)
+    pairs=(np.array([atom_pairs.split()[i:i+2] for i in range(0,len(atom_pairs.split()),2)],dtype=int))-1
     molecules=[molecule_dir for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)]    
+    dist_list=[]
     for molecule in molecules:
+        bond_length_list=[]
         xyz_file_generator(os.path.abspath(molecule))
         os.chdir(os.path.abspath(molecule))
         xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])).drop([0,1],axis=0)
-        dist_list=[]
         for i in range(0,len(pairs)):
-            dist_list.append(get_norm(xyz_df[['x','y','z']].iloc[pairs[i][0]].astype(float)-xyz_df[['x','y','z']].iloc[pairs[i][1]].astype(float)))
-        pairs_df=pd.DataFrame(dist_list)
-        delete_type_files() ## delete xyz files
+            bond_length=(get_norm(xyz_df[['x','y','z']].iloc[pairs[i][0]].astype(float)-xyz_df[['x','y','z']].iloc[pairs[i][1]].astype(float)))
+            bond_length_list.append(bond_length)
+        dist_list.append(bond_length_list)
+        delete_type_files()
         os.chdir('../')
+    pairs_df=pd.DataFrame(dist_list)
     return pairs_df
             
-# bond.lengths <- function(atom.pairs) {
-#   bonds.vec <- strsplit(atom.pairs, " ")
-#   unlisted.bvec <- unlist(bonds.vec)
-#   numeric.bvec <- as.numeric(unlisted.bvec)
-#   paired <- split(
-#     numeric.bvec,
-#       ceiling(seq_along(numeric.bvec) / 2)
-#   )
-#   molecules <- list.dirs(full.names = F,recursive = F)
-#   mag <- function(vector) {
-#     sqrt(vector[[1]]^2 + vector[[2]]^2 + vector[[3]]^2)
-#   }
-#   dist.df <- data.frame(matrix(ncol = length(paired), nrow = length(molecules)))
-#   names(dist.df) <- stringr::str_replace(as.character(paired),'c','Dist')
-#   for (molecule in molecules) {
-#     xyz_file_generator(molecule)
-#     setwd(molecule)
-#     xyz <- data.table::fread(list.files(pattern = '.xyz'))
-#     dist.list <- data.frame(matrix(ncol = length(paired), nrow = 1))
-#     for (i in 1:length(paired)) {
-#       dist.list[i] <- mag(xyz[paired[[i]][1], 2:4] - xyz[paired[[i]][2], 2:4])
-#     }
-#     names(dist.list) <- paired
-#     dist.df[which(molecules == stringr::str_remove(molecule,'/')), ] <- dist.list
-#     unlink(list.files(pattern = '.xyz'))
-#     setwd('..')
-#   }
-#   for (file in list.files(full.names = F, recursive = F)) {
-#     setwd(file)
-#     unlink(list.files(pattern = ".xyz"))
-#     setwd('..')
-#   }
-#   row.names(dist.df) <- molecules
-#   return(dist.df)
-# }
-
+# need to edit indexes to molecule name, columns=bond lenght of atoms
 
         
     
