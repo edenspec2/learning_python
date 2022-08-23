@@ -394,15 +394,16 @@ def get_angles_df_from_csv(atoms_indexes): #gets a list of atom indexes
 def get_angles_df_from_xyz(atoms_indexes): ### very similar to get_angles_df_from_csv only it works on xyz files
     pass
             
-
 def get_bond_lengths(atom_pairs): ##creates xyz from csv, input as '2 3 4 5 6'
     pairs=(np.array([atom_pairs.split()[i:i+2] for i in range(0,len(atom_pairs.split()),2)],dtype=int))-1
     molecules=[molecule_dir for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)]    
-    dist_list=[]
+    columns=[('bond length'+str(pairs[i])) for i in range(0,len(pairs))]
+    dist_list,indexes=[],[]
     for molecule in molecules:
         bond_length_list=[]
         xyz_file_generator(os.path.abspath(molecule))
         os.chdir(os.path.abspath(molecule))
+        indexes.append(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])
         xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])).drop([0,1],axis=0)
         for i in range(0,len(pairs)):
             bond_length=(get_norm(xyz_df[['x','y','z']].iloc[pairs[i][0]].astype(float)-xyz_df[['x','y','z']].iloc[pairs[i][1]].astype(float)))
@@ -410,10 +411,10 @@ def get_bond_lengths(atom_pairs): ##creates xyz from csv, input as '2 3 4 5 6'
         dist_list.append(bond_length_list)
         delete_type_files()
         os.chdir('../')
-    pairs_df=pd.DataFrame(dist_list)
+    pairs_df=pd.DataFrame(dist_list,columns=columns,index=indexes)
     return pairs_df
             
-# need to edit indexes to molecule name, columns=bond lenght of atoms
+
 
         
     
@@ -424,7 +425,7 @@ if __name__=='__main__':
     os.chdir(path)
     df=get_angles_df_from_csv([2,3,4])
 
-    df2=get_bond_lengths('2 3 4 5 6 7')
+    df2=get_bond_lengths('2 3 4 5 6 7 8 9 10 11 12 13')
     
 
     

@@ -693,7 +693,7 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
       setwd("..")
     }, error = function(e) {
       print(basename(getwd()))
-      message("Something is wrong, stopping steRimol")
+      message("Something is wrong, stopping steRimol ")
       unlink(list.files(pattern = ".xyz"))
       setwd("..")
     }
