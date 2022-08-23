@@ -865,7 +865,7 @@ npa_dipole <- function(mol.dir, coor.atoms, type = 'npa', center.of.mass = F) {
   xyz <- data.frame(data.table::fread(list.files(pattern="xyz_") ,
                                       sep = " ", header = F, fill = T
   ))
-  xyz <- apply(xyz, as.numeric)
+  xyz <- sapply(xyz, as.numeric)
   print(xyz)
   mag <- function(vector) {
     sqrt(vector[[1]]^2 + vector[[2]]^2 + vector[[3]]^2)
@@ -1208,7 +1208,7 @@ bond.lengths <- function(atom.pairs) {
   numeric.bvec <- as.numeric(unlisted.bvec)
   paired <- split(
     numeric.bvec,
-    ceiling(seq_along(numeric.bvec) / 2)
+      ceiling(seq_along(numeric.bvec) / 2)
   )
   molecules <- list.dirs(full.names = F,recursive = F)
   mag <- function(vector) {
