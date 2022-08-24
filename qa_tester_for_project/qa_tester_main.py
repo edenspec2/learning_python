@@ -76,7 +76,7 @@ def get_building_block(building_block_name='function_name', module=None):
     The function gets a building block name and returns the corresponding old building block actual function 
     """
     function_dict=get_module_function_dict(module)
-    building_block=function_dict.get(building_block_name)
+    actual_building_block=function_dict.get(building_block_name)
     return actual_building_block
 
 ## for use in check_building_block_solely

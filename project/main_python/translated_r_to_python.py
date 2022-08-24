@@ -98,17 +98,7 @@ def convert_csv_to_xyz_df(csv_filename):
     xyz_df.replace(GeneralConstants.ATOMIC_NUMBERS.value,inplace=True)
     return xyz_df
    
-class XYZHandler():
-    """
-    A data handler for XYZ files
-    """
 
-    def __init__(self):
-        self.opened_xyz_files=[]
-
-    def open_xyz_data_from_csv(self, csv_filename):
-        xyz_df=convert_csv_to_xyz_df(csv_filename)
-        self.opened_xyz_files.append(xyz_df)
 
 def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-currently the R function generates filename without 'xyz_'.
     """
@@ -174,7 +164,6 @@ def change_file_name(files_directory_path,old_file_name,new_file_name):###works,
     for molecule in list_of_molecules:
         if (molecule==old_file_name):
             os.rename(molecule,new_file_name)
-    
     return
 
 def get_angle(p1, p2): ###works, name in R: 'angle' 
@@ -220,6 +209,27 @@ def get_norm(molecule):###help function
 
                                                     #only the number of them
 def coordination_transformation(molecule_file_name,base_atoms_indexes,return_variables=False):#origin_atom, y_direction_atom, xy_plane_atom
+    """
+    this function works inside a molecule directory,
+    it takes molecule coordinates as csv of xyz, and new base atoms, and creates a new xyz file with shifted coordinates
+    has the option to return a df of new coordinates.
+    
+    parameters:
+    ----------
+    molecule_file_name: str
+        name of molecule coordinates file.
+    base_atoms_indexes: list of nums
+        indexes of new atoms to shift coordinates by.
+    return_variables: bool
+        default False- do not return array variable, return df if True.
+        
+    returns:
+        creates a tc.xyz file.
+    -------
+    transformed_coordinates_array-optional: np.array
+        new coordinates after transformation
+    
+    """
     indexes=np.array(base_atoms_indexes)-1
     try:
         molecule=(xyz_to_ordered_DataFrame(molecule_file_name)).drop([0,1],axis=0)
@@ -331,7 +341,6 @@ def get_npa_dipole_df(molecules_dir_path):
                        dip_x     dip_y     dip_z    total
 xyz_molecule_1.csv -0.752835  0.026260  0.236615  0.78958
 xyz_molecule_2.csv  1.120679  2.329781 -1.416985  2.94816
-
     """
     molecules=[molecule_dir for molecule_dir in os.listdir(molecules_dir_path) if os.path.isdir(molecule_dir)]
     base_atoms_input=input('Enter atoms - origin atom, y axis atom and xy plane atom with spaces:')
@@ -355,6 +364,19 @@ xyz_molecule_2.csv  1.120679  2.329781 -1.416985  2.94816
 def get_angles_df_from_csv(atoms_indexes): #gets a list of atom indexes
     """
     a function that gets 3/4 atom indexes, and returns a df of angles-either agnle or dihedral
+    works on a directory containing other directories of molecule csv files.
+    Parameters
+    ----------
+    atoms_indexes- list of ints
+        a list of atom indexes to calculate the angle between- [2,3,4]
+   
+    Returns
+    -------
+    angle_df-a dataframe containing molecule name and the angle calculated between chosen atoms.
+                    Angle [2, 3, 4]
+molecule                           
+txt_molecule_1.xyz       120.835613
+txt_molecule_2.xyz       166.494119
     """
     indexes=np.array(atoms_indexes)-1 #three atoms-angle four atoms-dihedral
     if len(indexes)==3:
@@ -369,13 +391,13 @@ def get_angles_df_from_csv(atoms_indexes): #gets a list of atom indexes
         xyz_file_generator(os.path.abspath(molecule))
         os.chdir(os.path.abspath(molecule))     
                                  ##need fix-dont make xyz out of dipole/ currently npa-xsls type
-        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])).drop([0,1],axis=0)
+        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list('txt')[0]).drop([0,1],axis=0))
         xyz_df.reset_index()
         if(len(indexes)==3):
             first_bond=xyz_df[['x','y','z']].iloc[new_indexes[0]].astype(float)-xyz_df[['x','y','z']].iloc[new_indexes[1]].astype(float)
             second_bond=xyz_df[['x','y','z']].iloc[new_indexes[3]].astype(float)-xyz_df[['x','y','z']].iloc[new_indexes[2]].astype(float)
             angle_df.loc[len(angle_df.index)]=(get_angle(first_bond, second_bond))*(180/math.pi)
-            index_name.append(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])
+            index_name.append(xyz_lib.get_filename_list('txt')[0])
             
         else:
             first_bond=xyz_df[['x','y','z']].iloc[indexes[0]].astype(float)-xyz_df[['x','y','z']].iloc[indexes[1]].astype(float)
@@ -395,6 +417,30 @@ def get_angles_df_from_xyz(atoms_indexes): ### very similar to get_angles_df_fro
     pass
             
 def get_bond_lengths(atom_pairs): ##creates xyz from csv, input as '2 3 4 5 6'
+    """
+    
+    a function that gets input string of pairs of atoms indexes split them to pairs and calcultes
+    the distance between each pair for every molecule.
+    this function works on directory of molecule directorys.
+    
+    Parameters
+    ----------
+    atom_pairs : str
+        a string of atom indexes pairs- '2 3 4 5'
+        
+    *this function takes parameters for get_npa_dipole with input commmand
+    
+    Returns
+    -------
+    pairs_df : dataframe
+        distance between each pair in every molecule.
+        
+        Output:
+                    bond length[1 2]  ...  bond length[11 12]
+txt_molecule_1.xyz          1.525692  ...            1.648676
+txt_molecule_2.xyz          0.755886  ...            1.648676
+    
+    """
     pairs=(np.array([atom_pairs.split()[i:i+2] for i in range(0,len(atom_pairs.split()),2)],dtype=int))-1
     molecules=[molecule_dir for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)]    
     columns=[('bond length'+str(pairs[i])) for i in range(0,len(pairs))]
@@ -403,8 +449,8 @@ def get_bond_lengths(atom_pairs): ##creates xyz from csv, input as '2 3 4 5 6'
         bond_length_list=[]
         xyz_file_generator(os.path.abspath(molecule))
         os.chdir(os.path.abspath(molecule))
-        indexes.append(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])
-        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])).drop([0,1],axis=0)
+        indexes.append(xyz_lib.get_filename_list('txt')[0])
+        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list('txt')[0])).drop([0,1],axis=0)
         for i in range(0,len(pairs)):
             bond_length=(get_norm(xyz_df[['x','y','z']].iloc[pairs[i][0]].astype(float)-xyz_df[['x','y','z']].iloc[pairs[i][1]].astype(float)))
             bond_length_list.append(bond_length)
@@ -413,7 +459,9 @@ def get_bond_lengths(atom_pairs): ##creates xyz from csv, input as '2 3 4 5 6'
         os.chdir('../')
     pairs_df=pd.DataFrame(dist_list,columns=columns,index=indexes)
     return pairs_df
-            
+
+
+         
 
 
         

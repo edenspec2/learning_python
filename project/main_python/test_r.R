@@ -3,10 +3,11 @@ library('tools')
 library('plyr')
 
 source("C:/Users/edens/Documents/GitHub/learning_python/project/main_python/comp.set.1.1.R")
-setwd("C:/Users/edens/Documents/GitHub/learning_python/project/main_python/test_dipole")
-df_3=bond.lengths('7 6 5 4 3 2')
+setwd("C:/Users/edens/Documents/GitHub/learning_python/project/main_python/test_dipole/molecule1")
+nbos.info =list.files(pattern = "nbo_")
+
+x=nbo.info("C:/Users/edens/Documents/GitHub/learning_python/project/main_python/test_dipole/molecule1","2 3 4")
+df=nbo.df("C:/Users/edens/Documents/GitHub/learning_python/project/main_python/test_dipole")
 
 
-
-npo=nbo.info("C:/Users/edens/Documents/GitHub/learning_python/project/main_python/test_dipole","2 3 4")
 

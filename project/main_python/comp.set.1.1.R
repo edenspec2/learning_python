@@ -769,9 +769,10 @@ nbo.df <- function(path) {
   nbo.diffs <- readline('Insert atom pairs for which you wish calculate differences: ')
   pairs.vec <- strsplit(nbo.diffs, " ")
   unlisted.pvec <- unlist(pairs.vec)
+  numeric.pvec<-as.numeric(unlisted.pvec)
   paired <- split(
-    unlisted.pvec,
-    ceiling(seq_along(unlisted.pvec) / 2)
+    numeric.pvec,
+    ceiling(seq_along(numeric.pvec) / 2)
   )
   clean.names <- stringr::str_remove_all(names(nbo.dafr), 'NPA_')
   nbo.df.diff <- data.frame(matrix(ncol = length(paired), nrow = nrow(nbo.dafr)))
