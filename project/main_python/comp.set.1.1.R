@@ -363,8 +363,8 @@ mol.info <- function(info_filename, vib_num_filename) {
   row.names(your.vib) <- c("Frequency [1/cm]", "IR intensity")
   colnames(your.vib) <- sub("\\.csv$", "", vib_num_filename)
   your.vib
-  return(flat.info)
   return(your.vib)
+
 }
 
 

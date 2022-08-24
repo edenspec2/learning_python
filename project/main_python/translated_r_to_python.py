@@ -179,7 +179,7 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
     A void function
     """
     os.chdir(files_directory_path)
-    list_of_molecules=[file for file in os.listdir(files_directory_path) if file.endswith('xyz')]
+    list_of_molecules=xyz_lib.get_filename_list('txt')
     index_1,index_2=(*indexes,)
     index_1+=-1
     index_2+=-1
@@ -460,7 +460,70 @@ txt_molecule_2.xyz          0.755886  ...            1.648676
     pairs_df=pd.DataFrame(dist_list,columns=columns,index=indexes)
     return pairs_df
 
-
+def get_molecule_info(vib_num_filename):
+    info=xyz_lib.convert_tabular_text_to_matrix(xyz_lib.get_filename_list('info')[0])
+    seperated_info=[info[i][0].split() for i in range(0,len(info))]
+    info_df=pd.DataFrame(seperated_info)
+    info_df.set_axis(info_df[0],inplace=True)
+    frequencies=info_df.loc['Frequencies'][[2,3,4]]
+    ir=info_df.loc['IR'][[3,4,5]]
+    frequencies_list = [item for sublist in frequencies.values.tolist() for item in sublist]
+    ir_list=[item for sublist in ir.values.tolist() for item in sublist]
+    ordered_info_df=pd.DataFrame([frequencies_list,ir_list], index=['Frequency[1/cm]','IR intensity'])
+    vib=(fr.csv_filename_to_dataframe(vib_num_filename)).drop([0,1],axis=1)
+    data,magnitude=[],[]
+    for i in range(0,vib.shape[0]):
+        data.append(vib.iloc[i][0:3].reset_index(drop=True))
+        magnitude.append(get_norm(vib.iloc[i][0:3].reset_index(drop=True)))
+        data.append(vib.iloc[i][3:6].reset_index(drop=True))
+        magnitude.append(get_norm(vib.iloc[i][3:6].reset_index(drop=True)))
+        data.append(vib.iloc[i][6:9].reset_index(drop=True))
+        magnitude.append(get_norm(vib.iloc[i][6:9].reset_index(drop=True)))
+    df=pd.DataFrame(data).reset_index(drop=True)
+    df['magnitude']=magnitude
+    df['frequency']=ordered_info_df.loc['Frequency[1/cm]']
+    outer_finger=(df['frequency'].astype(float)>1500)
+    index_max=df[outer_finger]['magnitude'].idxmax()
+    frequency=df['frequency'][index_max]
+    return ordered_info_df.values
+# mol.info <- function(info_filename, vib_num_filename) {
+#   info <- data.frame(data.table::fread(info_filename,
+#                                        sep = " ", header = F, fill = T
+#   ))
+#   leave.out <- c(
+#     "Frequencies",
+#     "IR",
+#     "Inten",
+#     "--",
+#     "A"
+#   )
+#   for (i in leave.out) {
+#     info[info == i] <- NA
+#   }
+#   info.nonarow <- info[rowSums(is.na(info)) != ncol(info), ]
+#   row.names(info.nonarow) <- 1:dim(info.nonarow)[1]
+#   seq.1 <- seq(1, dim(info.nonarow)[1], 3)
+#   seq.2 <- seq(2, dim(info.nonarow)[1], 3)
+#   seq.3 <- seq(3, dim(info.nonarow)[1], 3)
+#   info.nonarow[seq.2, 1:3] <- info.nonarow[seq.2, 3:5]
+#   info.nonarow[seq.3, 1:3] <- info.nonarow[seq.3, 4:6]
+#   info.clean <- info.nonarow[, 1:3]
+#   block.list <- list()
+#   for (i in seq.1) {
+#     a <- info.clean[i, ]
+#     b <- info.clean[i + 1, ]
+#     c <- info.clean[i + 2, ]
+#     d <- rbind(a, b, c)
+#     block.list[[i]] <- assign(
+#       paste("block", i, sep = "."),
+#       data.frame(d)
+#     )
+#   }
+#   block.list.compact <- plyr::compact(block.list)
+#   flat.info <- do.call(cbind, block.list.compact)
+#   names(flat.info) <- flat.info[1, ]
+#   flat.info <- flat.info[-1, ]
+#   row.names(flat.info) <- c("Frequency [1/cm]", "IR intensity")
          
 
 
@@ -469,11 +532,10 @@ txt_molecule_2.xyz          0.755886  ...            1.648676
 
 if __name__=='__main__':
     # xyz_file_generator_library(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python','new_directory') #works
-    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole'
+    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole\molecule1'
     os.chdir(path)
-    df=get_angles_df_from_csv([2,3,4])
+    # df3=get_molecule_info()
+    df2=get_molecule_info('vib_1_A1_o.csv')
 
-    df2=get_bond_lengths('2 3 4 5 6 7 8 9 10 11 12 13')
-    
 
     
