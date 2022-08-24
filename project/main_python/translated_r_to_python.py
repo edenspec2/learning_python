@@ -1,17 +1,12 @@
 
-import sys
-##path_to_add=r'C:\Users\avishayk\Documents\GitHub\learning_python'
-#path_to_add=r'C:\Users\edens\Documents\GitHub\learning_python\python_stuff'
-#sys.path.insert(0, path_to_add)
-
 import pandas as pd
 pd.options.mode.chained_assignment = None
 import numpy as np
 import os
 import math
 from enum import Enum
-import learning_python.python_stuff.xyz_file_function as xyz_lib
-import learning_python.python_stuff.function_reviewed as fr
+import xyz_file_function as xyz_lib
+import function_reviewed as fr
 import csv
 
 class GeneralConstants(Enum):
