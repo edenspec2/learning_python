@@ -48,6 +48,19 @@ class GeneralConstants(Enum):
             'Pa': 2.00, 'U': 1.96, 'Np': 1.90, 'Pu': 1.87,
             'Am': 1.80, 'Cm': 1.69
     }
+    
+    CPK_RADII={
+        'H': 1.10, 'C': 1.70, 'F': 1.47,
+        'S': 1.80, 'B': 1.92, 'I': 1.98, 
+        'N': 1.55, 'O': 1.52, 'Co': 2.00, 
+        'Br': 1.83, 'Si': 2.10,'Ni': 2.00,
+        'P': 1.80, 'Cl': 1.75, 
+    }
+    
+    (c("C", "C2", "C3", "C4", "C5/N5", "C6/N6", "C7", "C8",
+                                   "H", "N", "C66", "N4", "O", "O2", "P", "S", 'S.O', "S1", "F", "Cl", "S4", "Br", "I"), 
+                                 c(1.50,1.60,1.60,1.50,1.70,1.70,1.70,1.50,1.00,1.50,
+                                   1.70,1.45,1.35,1.35,1.40,1.70,1.70,1.00,1.35,1.80,1.40,1.95,2.15))
 
     ATOMIC_NUMBERS ={
     'atom':{ '1':'H', '5':'B', '6':'C', '7':'N', '8':'O', '9':'F', '14':'Si',
@@ -104,6 +117,10 @@ def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-cur
     """
     a function that gets a directory path as folder_path, makes xyz files from all csv files in the same directory.
     This is a void function
+    works in a specific molecule directory.
+    example:
+        path=GitHub\learning_python\project\main_python\test_dipole\molecule1
+        xyz_file_generator(path)
     """
     os.chdir(folder_path)
     list_of_csv_files=xyz_lib.get_filename_list('xyz_') #changed to 'xyz_' from .csv
@@ -139,14 +156,15 @@ def move_xyz_files_directory(current_directory,new_directory):#my help function
         os.replace(current_path,new_path)
     return
                        
-def xyz_file_generator_library(files_directory_path, directory_name): ###works, name in R:'xyz_file_generator_library'
+def xyz_file_generator_library(files_directory_path, directory_name): ###not working, name in R:'xyz_file_generator_library'
     """
     a void function
+
     """
     path=os.path.join(files_directory_path,directory_name)
     try:
         os.mkdir(path)
-        xyz_file_generator(files_directory_path)
+        xyz_file_generator(files_directory_path)            ## edit to one function
         move_xyz_files_directory(files_directory_path,path)
     except FileExistsError:
         xyz_file_generator(files_directory_path)
@@ -177,6 +195,11 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
     """
     A function that gets directory path, molecule file name, and the indexes of the atoms to swap, and overwrite the xyz file with the swapped pair.
     A void function
+    
+    example:
+    -------
+    path='learning_python\project\main_python\test_dipole\molecule1'
+    molecule_atom_swapper(path,'txt_molecule_1.xyz',[2,4])
     """
     os.chdir(files_directory_path)
     list_of_molecules=xyz_lib.get_filename_list('txt')
@@ -192,20 +215,30 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
             xyz_file.iloc[index_1] = c
             xyz_file.iloc[index_2] = temp
             xyz_lib.dataframe_to_xyz(xyz_file,molecule)
+    os.chdir('../')
     return 
 
 
 def get_specific_molecule_df(molecule_file_name):
     pass
 
-def get_norm(molecule):###help function
+def get_norm(xyz_coordinates):###need edit
     """
     a function that gets xyz coordinates as dataframe and returns the sum of square roots.
     """
     norm=0
-    for i in range(0,len(molecule)):
-       norm+=(float(molecule[i]))**2
+    for i in range(0,len(xyz_coordinates)):
+       norm+=(float(xyz_coordinates[i]))**2
     return math.sqrt(norm)
+
+# def get_norm(xyz_coordinates):###help function
+#     """
+#     a function that gets xyz coordinates as dataframe and returns the sum of square roots.
+#     """
+#     norm=0
+#     norm=sum((float(xyz_coordinates[i]))**2 for i in range(0,len(xyz_coordinates)))
+
+#     return math.sqrt(norm)
 
                                                     #only the number of them
 def coordination_transformation(molecule_file_name,base_atoms_indexes,return_variables=False):#origin_atom, y_direction_atom, xy_plane_atom
@@ -213,6 +246,7 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes,return_var
     this function works inside a molecule directory,
     it takes molecule coordinates as csv of xyz, and new base atoms, and creates a new xyz file with shifted coordinates
     has the option to return a df of new coordinates.
+    
     
     parameters:
     ----------
@@ -228,6 +262,10 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes,return_var
     -------
     transformed_coordinates_array-optional: np.array
         new coordinates after transformation
+        
+    example:
+    -------
+    coordination_transformation('xyz_molecule_1.csv',[2,3,4])
     
     """
     indexes=np.array(base_atoms_indexes)-1
@@ -260,7 +298,7 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes,return_var
         x=(molecule[['x','y','z']].iloc[i].astype(float)-new_origin)
         new_coordinates.append(x)
         transformed_coordinates.append(np.dot(new_basis,x))
-    transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4)
+    transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4) ## check if rounding is needed
     atom_array=molecule['atom'].to_numpy()
     transformed_array=np.column_stack((atom_array,transformed_coordinates_array))
     new_filename=xyz_lib.change_filetype(molecule_file_name,'_tc.xyz')
@@ -274,7 +312,7 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes,return_var
      
 
      
-def coordination_transformation_entire_dir(files_directory_path,base_atoms_indexes):
+def coordination_transformation_entire_dir(files_directory_path,base_atoms_indexes):##not used in code
     os.chdir(files_directory_path)
     list_of_molecules=[file for file in os.listdir(files_directory_path) if file.endswith('xyz')]
     for molecule in list_of_molecules:
@@ -282,8 +320,9 @@ def coordination_transformation_entire_dir(files_directory_path,base_atoms_index
     os.chdir('../')
     
     
-def get_npa_dipole(base_atoms_indexes,sub_atoms=None, file_type='npa', center_of_mass=False):##working- possible to add subunits without xyz files ???
+def get_npa_dipole(base_atoms_indexes,sub_atoms=None, file_type='npa', center_of_mass=False):##add error massage if file not found
     """
+    works inside molecule directory.
     *this function runs on get_npa_dipole so doesnt need path consider adding option for single molecule_dir like in R
     Parameters
     ----------
@@ -342,6 +381,7 @@ def get_npa_dipole_df(molecules_dir_path):
 xyz_molecule_1.csv -0.752835  0.026260  0.236615  0.78958
 xyz_molecule_2.csv  1.120679  2.329781 -1.416985  2.94816
     """
+    os.chdir(molecules_dir_path)
     molecules=[molecule_dir for molecule_dir in os.listdir(molecules_dir_path) if os.path.isdir(molecule_dir)]
     base_atoms_input=input('Enter atoms - origin atom, y axis atom and xy plane atom with spaces:')
     base_atoms_indexes=base_atoms_input.split()
@@ -372,6 +412,7 @@ def get_angles_df_from_csv(atoms_indexes): #gets a list of atom indexes
    
     Returns
     -------
+    df=get_angles_df_from_csv([2,3,4])
     angle_df-a dataframe containing molecule name and the angle calculated between chosen atoms.
                     Angle [2, 3, 4]
 molecule                           
@@ -443,7 +484,7 @@ txt_molecule_2.xyz          0.755886  ...            1.648676
     """
     pairs=(np.array([atom_pairs.split()[i:i+2] for i in range(0,len(atom_pairs.split()),2)],dtype=int))-1
     molecules=[molecule_dir for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)]    
-    columns=[('bond length'+str(pairs[i])) for i in range(0,len(pairs))]
+    columns=[('bond length'+str(pairs[i]+1)) for i in range(0,len(pairs))]
     dist_list,indexes=[],[]
     for molecule in molecules:
         bond_length_list=[]
@@ -464,6 +505,8 @@ def get_molecule_info(vib_num_filename):##add option to return ordered_info_df-l
     """
     a function that convert info.csv file into ordered dataframe, gets a vibration file and returns
     the frequecy and IR with the max magnitude for the vibration.
+    splits the coordinates of vib to 3 coordinates and calculates the magnituede. takes frequencys greter than 1500
+    and returns the frequency and IR corresponding to max magnitude.
     
     works in a specific molecule directory
     
@@ -507,9 +550,13 @@ def get_molecule_info(vib_num_filename):##add option to return ordered_info_df-l
     index_max=df[outer_finger]['magnitude'].idxmax()
     frequency=(df['frequency'][index_max]).astype(float)
     mask=(ordered_info_df.T)['Frequency[1/cm]']==frequency
+    # return ordered_info_df
     return (ordered_info_df.T)[mask].T
 
-
+def get_nbo_info(molecule_dir,atom_indexes):##run with get nbo_info_df
+    os.chdir(molecule_dir)
+    nbo_file=fr.csv_filename_to_dataframe(xyz_lib.get_filename_list('nbo')[0])
+    return nbo_file.iloc[atom_indexes].T
 
 
 
@@ -520,8 +567,7 @@ if __name__=='__main__':
     # xyz_file_generator_library(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python','new_directory') #works
     path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole\molecule1'
     os.chdir(path)
-    # df3=get_molecule_info()
-    df2=get_molecule_info('vib_1_A1_o.csv')
+    df=get_npa_dipole_df(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole')
 
 
     

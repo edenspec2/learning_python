@@ -17,7 +17,8 @@ xyz_file_generator <- function(dir) {
   options(scipen = 999)
   setwd(dir)
   unlink(list.files(pattern = '*.xyz'))
-  molecules <- list.files(full.names = F, recursive = F, pattern = "\\.csv$")
+  #molecules <- list.files(full.names = F, recursive = F, pattern = "\\.csv$")
+  molecules <- list.files(full.names = F, recursive = F, pattern = "xyz_")
   for (molecule in molecules) {
     xyz <- data.frame(read.csv(molecule, header = F, col.names = c('atom','x','y','z')))
     suppressMessages(xyz$atom <- plyr::mapvalues(xyz$atom,
@@ -383,8 +384,11 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
                                    "H", "N", "C66", "N4", "O", "O2", "P", "S", 'S.O', "S1", "F", "Cl", "S4", "Br", "I"), 
                                  c(1.50,1.60,1.60,1.50,1.70,1.70,1.70,1.50,1.00,1.50,
                                    1.70,1.45,1.35,1.35,1.40,1.70,1.70,1.00,1.35,1.80,1.40,1.95,2.15))
+      
       colnames(Paton.Atypes) <- c("Atom", "Radius")
+      
       Paton.Atypes <- rbind(Paton.Atypes, bondi[!bondi$Atom %in% Paton.Atypes$`Atom`,])
+     
       xyz_file_generator(mol.dir)
       setwd(mol.dir)
       bonds <- unique(data.table::fread(list.files(pattern = "bonds")))
@@ -394,6 +398,7 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
       } else {
         coordinates <- paste(coordinates, as.character(bonds[bonds$V1 == direction, ][1, 2]), sep = " ")
       }
+      print(coordinates)
       if (as.numeric(unlist(strsplit(coordinates, " "))[[3]]) == origin) {
         coordinates <- as.numeric(unlist(strsplit(coordinates, " "))[1:2])
         coordinates <- paste(as.character(coordinates[1]), as.character(coordinates[2]), sep = ' ')
@@ -413,6 +418,7 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
           coordinates <- paste(coordinates, as.character(remove.direction[remove.direction$V1 == origin, ][1, 2]), sep = " ")
         }
       }
+      
       coor.trans(list.files(pattern = ".xyz"), coordinates)
       mag <- function(vector) {
         sqrt(vector[[1]]^2 + vector[[2]]^2)
@@ -495,9 +501,11 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
       for (i in 1:dim(substi)[1]) {
         if (radii == 'bondi') {
           substi$Radius[i] <- bondi$Radius[bondi$Atom == substi$V1[i]]
+          
         }
         if (radii == 'CPK') {
           substi$Radius[i] <- Paton.Atypes$Radius[Paton.Atypes$Atom == substi$atypes[i]]
+          
         }
       }
       substi <- plyr::mutate(substi, Bs = substi$magnitude + substi$Radius)
@@ -689,12 +697,12 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
     }, warning = function(w) {
       print(getwd())
       message("Something is wrong")
-      unlink(list.files(pattern = ".xyz"))
+     # unlink(list.files(pattern = ".xyz"))
       setwd("..")
     }, error = function(e) {
       print(basename(getwd()))
       message("Something is wrong, stopping steRimol ")
-      unlink(list.files(pattern = ".xyz"))
+   #   unlink(list.files(pattern = ".xyz"))
       setwd("..")
     }
   )
