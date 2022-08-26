@@ -239,14 +239,14 @@ def get_norm(xyz_coordinates):###need edit
        norm+=(float(xyz_coordinates[i]))**2
     return math.sqrt(norm)
 
-# def get_norm(xyz_coordinates):###help function
-#     """
-#     a function that gets xyz coordinates as dataframe and returns the sum of square roots.
-#     """
-#     norm=0
-#     norm=sum((float(xyz_coordinates[i]))**2 for i in range(0,len(xyz_coordinates)))
+def get_norm_2(xyz_coordinates):###help function
+    """
+    a function that gets xyz coordinates as dataframe and returns the sum of square roots.
+    """
+    norm=0
+    norm=sum((float(xyz_coordinates[i]))**2 for i in range(0,len(xyz_coordinates)))
 
-#     return math.sqrt(norm)
+    return math.sqrt(norm)
 
                                                     #only the number of them
 def coordination_transformation(coor_file_name,base_atoms_indexes,return_variables=False):#origin_atom, y_direction_atom, xy_plane_atom
@@ -583,10 +583,10 @@ def coor_for_sterimol(bonds_df,coordinates):
 
             
             
-def get_sterimol_info(molecule_dir, coordinates, radii = 'CPK', only_sub = True, drop = None):
-    xyz_file_generator(molecule_dir)
-    os.chdir(molecule_dir)
-    bonds=fr.csv_filename_to_dataframe(xyz_lib.get_filename_list('bonds')[0])
+# def get_sterimol_info(molecule_dir, coordinates, radii = 'CPK', only_sub = True, drop = None):
+#     xyz_file_generator(molecule_dir)
+#     os.chdir(molecule_dir)
+#     bonds=fr.csv_filename_to_dataframe(xyz_lib.get_filename_list('bonds')[0])
     
 
 class Molecule():
@@ -625,7 +625,96 @@ class Molecule():
         output_name=[file_name for file_name in self.list_of_files if 'xyz_' in file_name][0]
         xyz_lib.dataframe_to_xyz(self.coordinates_df,xyz_lib.change_filetype(output_name,'_tc.xyz'))
         os.chdir('../')
+        
+        
+    def get_df_tc(self,base_atoms_indexes):
+        indexes=np.array(base_atoms_indexes)-1
+        coor=np.array(self.coordinates_df[['x','y','z']])
+        if (len(indexes)==4):
+            new_origin=(coor[indexes[0]]+coor[indexes[1]])/2
+            new_y=(coor[indexes[2]]-new_origin)/get_norm((coor[indexes[2]]-new_origin))
+            coplane=((coor[indexes[3]]-new_origin)/get_norm((coor[indexes[3]]-new_origin)))
+        else:
+            new_origin=coor[indexes[0]]
+            new_y=(coor[indexes[1]]-new_origin)/get_norm((coor[indexes[1]]-new_origin))
+            coplane=((coor[indexes[2]]-new_origin)/get_norm((coor[indexes[2]]-new_origin)))
+        cross_y_plane=np.cross(coplane,new_y)
+        coef_mat=np.vstack([new_y, coplane, cross_y_plane])##
+        angle_new_y_coplane=get_angle(coplane,new_y)
+        new_origin=coor[indexes[0]] ### check with shahar cause this line make no sense for 4 atom coor. this line exists in R.
+        cop_ang_x=angle_new_y_coplane-(np.pi/2)
+        result_vector=[0,np.cos(cop_ang_x),0]
+        new_x=np.linalg.solve(coef_mat,result_vector)
+        new_z=np.cross(new_x,new_y)
+        new_basis=np.vstack([new_x, new_y, new_z])
+        new_coordinates=[]
+        transformed_coordinates=[]
+        for i in range(0,(coor.shape[0])):
+            x=(coor[i]-new_origin)
+            new_coordinates.append(x)
+            transformed_coordinates.append(np.dot(new_basis,x))
+        transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4) ## check if rounding is needed
+        atom_array=self.coordinates_df['atom'].to_numpy()
+        transformed_array=np.column_stack((atom_array,transformed_coordinates_array))
+        df_tc=pd.DataFrame(transformed_array)
+        df_tc.rename(columns={0:'atom',1:'x',2:'y',3:'z'},inplace=True)
+        df_tc.replace(GeneralConstants.ATOMIC_NUMBERS.value,inplace=True)#
+        return df_tc
     
+    def get_dipole_df(self,base_atoms_indexes):
+        atom_indexes=np.array(base_atoms_indexes)-1
+        charges=self.get_specific_df('npa')
+        array=np.array(self.get_df_tc(atom_indexes))
+        xyz_array=np.delete(array,0,1)
+        dip_comp_mat=np.hstack([xyz_array,charges])
+        dip_vector=[]
+        dip_xyz=np.empty((dip_comp_mat.shape[0],3)) ### create empty new column-checked as empty]
+        for i in range(0,dip_comp_mat.shape[0]):
+            dip_xyz[i,0]=dip_comp_mat[i,0]*dip_comp_mat[i,3]
+            dip_xyz[i,1]=dip_comp_mat[i,1]*dip_comp_mat[i,3]
+            dip_xyz[i,2]=dip_comp_mat[i,2]*dip_comp_mat[i,3]
+        for i in range(0,3):
+            dip_vector.append(sum(dip_xyz[:,i]))
+        vec_norm=get_norm(dip_vector)
+        array=np.hstack([dip_vector,vec_norm])
+        dip_df=pd.DataFrame(array,index=['dip_x','dip_y','dip_z','total']).T
+        dip_df.rename(index={0:self.get_filename('npa')},inplace=True)
+        return dip_df
+         
+    def get_bond_length(self,atom_pairs):##input-([2,3],[4,5])
+        pairs=np.array(atom_pairs)-1
+        index=[]
+        coor=np.array(self.coordinates_df[['x','y','z']])
+        bond_length_list=[]
+        for i in range(0,len(pairs)):
+            index.append(('bond length')+str(atom_pairs[i]))
+            bond_length=get_norm(coor[pairs[i][0]]-coor[pairs[i][1]])
+            bond_length_list.append(bond_length)
+        pairs_df=pd.DataFrame(bond_length_list,index=index)
+        return pairs_df
+    
+    
+    def get_bond_angle(self,atom_indexes): ##need expand to many angles
+        indexes=np.array(atom_indexes)-1 #three atoms-angle four atoms-dihedral
+        if len(indexes)==3:
+            new_indexes=[indexes[0],indexes[1],indexes[1],indexes[2]]
+            index=('Angle '+str(atom_indexes))
+        else:
+            index=('Dihedral '+str(atom_indexes))
+        coor=np.array(self.coordinates_df[['x','y','z']])
+        if(len(indexes)==3):
+            first_bond=coor[new_indexes[0]]-coor[new_indexes[1]]
+            second_bond=coor[new_indexes[3]]-coor[new_indexes[2]]
+            angle=get_angle(first_bond, second_bond)*(180/math.pi)
+        else:
+            first_bond=coor[indexes[0]]-coor[indexes[1]]
+            second_bond=coor[indexes[2]]-coor[indexes[1]]
+            third_bond=coor[indexes[3]]-coor[indexes[2]]
+            first_cross=np.cross(first_bond,second_bond)
+            second_cross=np.cross(third_bond,second_bond)
+            angle=get_angle(first_cross, second_cross)*(180/math.pi)
+        return angle
+        
 class Molecules():
     def __init__(self,molecules_dir_name):
         self.molecules_path=os.path.abspath(molecules_dir_name)
@@ -634,11 +723,12 @@ class Molecules():
         
 if __name__=='__main__':
     # xyz_file_generator_library(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python','new_directory') #works
-    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole'
-    # os.chdir(path)
- 
+    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole\molecule1'
+   
     molecules=Molecules('test_dipole')
-    
-    coor_for_sterimol(molecules.molecules[0].get_specific_df('bonds'),[3,7])
+    molecule_1=molecules.molecules[0]
+    os.chdir(path)
+    x=get_npa_dipole([2,3,4])
+    df=molecule_1.get_bond_angle([2,3,4])
 
     
