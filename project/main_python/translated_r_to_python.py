@@ -57,10 +57,18 @@ class GeneralConstants(Enum):
         'P': 1.80, 'Cl': 1.75, 
     }
     
-    (c("C", "C2", "C3", "C4", "C5/N5", "C6/N6", "C7", "C8",
-                                   "H", "N", "C66", "N4", "O", "O2", "P", "S", 'S.O', "S1", "F", "Cl", "S4", "Br", "I"), 
-                                 c(1.50,1.60,1.60,1.50,1.70,1.70,1.70,1.50,1.00,1.50,
-                                   1.70,1.45,1.35,1.35,1.40,1.70,1.70,1.00,1.35,1.80,1.40,1.95,2.15))
+    BONDI_RADII={
+        'C':1.50,   'H':1.00,   'S.O':1.70,  'Si':2.10,
+        'C2':1.60,  'N':1.50,   'S1':1.00,   'Co':2.00,
+        'C3':1.60,  'C66':1.70, 'F':1.35,    'Ni':2.00,
+        'C4':1.50,  'N4':1.45,  'Cl':1.80,
+        'C5/N5':1.70, 'O':1.35, 'S4':1.40,
+        'C6/N6':1.70, 'O2':1.35, 'Br':1.95,
+        'C7':1.70,    'P':1.40,  'I':2.15,
+        'C8':1.50,    'S':1.70,  'B':1.92,
+    
+    }
+    
 
     ATOMIC_NUMBERS ={
     'atom':{ '1':'H', '5':'B', '6':'C', '7':'N', '8':'O', '9':'F', '14':'Si',
@@ -241,7 +249,7 @@ def get_norm(xyz_coordinates):###need edit
 #     return math.sqrt(norm)
 
                                                     #only the number of them
-def coordination_transformation(molecule_file_name,base_atoms_indexes,return_variables=False):#origin_atom, y_direction_atom, xy_plane_atom
+def coordination_transformation(coor_file_name,base_atoms_indexes,return_variables=False):#origin_atom, y_direction_atom, xy_plane_atom
     """
     this function works inside a molecule directory,
     it takes molecule coordinates as csv of xyz, and new base atoms, and creates a new xyz file with shifted coordinates
@@ -270,11 +278,11 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes,return_var
     """
     indexes=np.array(base_atoms_indexes)-1
     try:
-        molecule=(xyz_to_ordered_DataFrame(molecule_file_name)).drop([0,1],axis=0)
+        molecule=(xyz_to_ordered_DataFrame(coor_file_name)).drop([0,1],axis=0)
         molecule=molecule.reset_index()
 
     except: #this way it works on csv file as well
-        molecule=convert_csv_to_xyz_df(molecule_file_name)
+        molecule=convert_csv_to_xyz_df(coor_file_name)
     if (len(indexes)==4):
         new_origin=(molecule[['x','y','z']].iloc[indexes[0]].astype(float)+molecule[['x','y','z']].iloc[indexes[1]].astype(float))/2
         new_y=(molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin))
@@ -301,7 +309,7 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes,return_var
     transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4) ## check if rounding is needed
     atom_array=molecule['atom'].to_numpy()
     transformed_array=np.column_stack((atom_array,transformed_coordinates_array))
-    new_filename=xyz_lib.change_filetype(molecule_file_name,'_tc.xyz')
+    new_filename=xyz_lib.change_filetype(coor_file_name,'_tc.xyz')
     if return_variables==False:
         with open(new_filename, 'w') as xyz_file:
             xyz_file.write("{}\n{}\n".format(transformed_array.shape[0],''))
@@ -558,16 +566,79 @@ def get_nbo_info(molecule_dir,atom_indexes):##run with get nbo_info_df
     nbo_file=fr.csv_filename_to_dataframe(xyz_lib.get_filename_list('nbo')[0])
     return nbo_file.iloc[atom_indexes].T
 
+def coor_for_sterimol(bonds_df,coordinates):
+    origin,direction=coordinates[0],coordinates[1]
+    try :
+        coordinates[2]==origin
+        if(any(bonds_df[0]==direction)):
+            coordinates[2]=int(bonds_df[(bonds_df[0]==direction)][1].iloc[1])
+        else:
+            coordinates[2]=int(bonds_df[(bonds_df[1]==direction)][0].iloc[1])
+    except: 
+        if (any(bonds_df[0]==direction)):
+            coordinates.append(int(bonds_df[(bonds_df[0]==direction)][1].iloc[0]))
+        else:
+            coordinates.append(int(bonds_df[(bonds_df[1]==direction)][0].iloc[0]))
+    return coordinates
 
-
-        
+            
+            
+def get_sterimol_info(molecule_dir, coordinates, radii = 'CPK', only_sub = True, drop = None):
+    xyz_file_generator(molecule_dir)
+    os.chdir(molecule_dir)
+    bonds=fr.csv_filename_to_dataframe(xyz_lib.get_filename_list('bonds')[0])
     
 
+class Molecule():
+    """
+    """
+    def __init__(self,molecule_dir_name):
+        """
+
+        Parameters
+        ----------
+        directory_path : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        self.molecule_path=os.path.abspath(molecule_dir_name)
+        os.chdir(self.molecule_path)
+        self.list_of_files=[filename for filename in os.listdir(self.molecule_path)]
+        self.coordinates_df=[convert_csv_to_xyz_df(file_name) for file_name in self.list_of_files if 'xyz_' in file_name][0]
+        # self.dfs=pd.DataFrame([fr.csv_filename_to_dataframe(file_name) for file_name in self.list_of_files],index=self.list_of_files)
+        os.chdir('../')
+     
+    def get_filename(self,file_type):
+        return [file_name for file_name in self.list_of_files if file_type in file_name][0]
+    def get_specific_df(self,file_type): ##info df will not be ordered
+        os.chdir(self.molecule_path)
+        df=fr.csv_filename_to_dataframe([file_name for file_name in self.list_of_files if file_type in file_name][0])
+        os.chdir('../')
+        return df
+    def export_coordinates_to_xyz(self):
+        os.chdir(self.molecule_path)
+        output_name=[file_name for file_name in self.list_of_files if 'xyz_' in file_name][0]
+        xyz_lib.dataframe_to_xyz(self.coordinates_df,xyz_lib.change_filetype(output_name,'_tc.xyz'))
+        os.chdir('../')
+    
+class Molecules():
+    def __init__(self,molecules_dir_name):
+        self.molecules_path=os.path.abspath(molecules_dir_name)
+        os.chdir(self.molecules_path)
+        self.molecules=[Molecule(molecule_dir) for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)] 
+        
 if __name__=='__main__':
     # xyz_file_generator_library(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python','new_directory') #works
-    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole\molecule1'
-    os.chdir(path)
-    df=get_npa_dipole_df(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole')
-
+    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole'
+    # os.chdir(path)
+ 
+    molecules=Molecules('test_dipole')
+    
+    coor_for_sterimol(molecules.molecules[0].get_specific_df('bonds'),[3,7])
 
     

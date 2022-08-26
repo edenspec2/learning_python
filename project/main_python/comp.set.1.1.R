@@ -388,7 +388,6 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
       colnames(Paton.Atypes) <- c("Atom", "Radius")
       
       Paton.Atypes <- rbind(Paton.Atypes, bondi[!bondi$Atom %in% Paton.Atypes$`Atom`,])
-     
       xyz_file_generator(mol.dir)
       setwd(mol.dir)
       bonds <- unique(data.table::fread(list.files(pattern = "bonds")))
@@ -398,7 +397,7 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
       } else {
         coordinates <- paste(coordinates, as.character(bonds[bonds$V1 == direction, ][1, 2]), sep = " ")
       }
-      print(coordinates)
+      
       if (as.numeric(unlist(strsplit(coordinates, " "))[[3]]) == origin) {
         coordinates <- as.numeric(unlist(strsplit(coordinates, " "))[1:2])
         coordinates <- paste(as.character(coordinates[1]), as.character(coordinates[2]), sep = ' ')
@@ -418,6 +417,7 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
           coordinates <- paste(coordinates, as.character(remove.direction[remove.direction$V1 == origin, ][1, 2]), sep = " ")
         }
       }
+      print(coordinates)
       
       coor.trans(list.files(pattern = ".xyz"), coordinates)
       mag <- function(vector) {
