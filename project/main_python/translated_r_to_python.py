@@ -114,9 +114,9 @@ def delete_type_files(file_type='xyz'): ## my help function to delete xyz files
         os.remove(os.path.abspath(molecule))
         
 def convert_csv_to_xyz_df(csv_filename):
-    xyz_df=fr.csv_filename_to_dataframe(csv_filename) ### adding columns not working
+    xyz_df=fr.csv_filename_to_dataframe(csv_filename)
     xyz_df.rename(columns={0:'atom',1:'x',2:'y',3:'z'},inplace=True)
-    xyz_df.replace(GeneralConstants.ATOMIC_NUMBERS.value,inplace=True)
+    xyz_df.replace(GeneralConstants.ATOMIC_NUMBERS.value,inplace=True)###change 'atom' to astype(int)
     return xyz_df
    
 
@@ -230,23 +230,7 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
 def get_specific_molecule_df(molecule_file_name):
     pass
 
-def get_norm(xyz_coordinates):###need edit
-    """
-    a function that gets xyz coordinates as dataframe and returns the sum of square roots.
-    """
-    norm=0
-    for i in range(0,len(xyz_coordinates)):
-       norm+=(float(xyz_coordinates[i]))**2
-    return math.sqrt(norm)
 
-def get_norm_2(xyz_coordinates):###help function
-    """
-    a function that gets xyz coordinates as dataframe and returns the sum of square roots.
-    """
-    norm=0
-    norm=sum((float(xyz_coordinates[i]))**2 for i in range(0,len(xyz_coordinates)))
-
-    return math.sqrt(norm)
 
                                                     #only the number of them
 def coordination_transformation(coor_file_name,base_atoms_indexes,return_variables=False):#origin_atom, y_direction_atom, xy_plane_atom
@@ -285,12 +269,12 @@ def coordination_transformation(coor_file_name,base_atoms_indexes,return_variabl
         molecule=convert_csv_to_xyz_df(coor_file_name)
     if (len(indexes)==4):
         new_origin=(molecule[['x','y','z']].iloc[indexes[0]].astype(float)+molecule[['x','y','z']].iloc[indexes[1]].astype(float))/2
-        new_y=(molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin))
-        coplane=((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)))
+        new_y=(molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/np.linalg.norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin))
+        coplane=((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)/np.linalg.norm((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)))
     else:
         new_origin=molecule[['x','y','z']].iloc[indexes[0]].astype(float)
-        new_y=(molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin))
-        coplane=((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)))
+        new_y=(molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin)/np.linalg.norm((molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin))
+        coplane=((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/np.linalg.norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)))
     cross_y_plane=pd.Series(np.cross(coplane,new_y),index=['x','y','z'])
     coef_mat=(pd.concat([new_y, coplane, cross_y_plane], axis=1)).T
     angle_new_y_coplane=get_angle(coplane,new_y)
@@ -361,7 +345,7 @@ xyz_csv_file_for_r_1.csv  0.097437 -0.611775  0.559625  0.834831
         dip_comp_mat[6].iloc[i]=dip_comp_mat[2].iloc[i]*dip_comp_mat[3].iloc[i]
     for i in range(4,7):
         dip_vector.append(sum(dip_comp_mat[i]))
-    vec_norm=get_norm(dip_vector)
+    vec_norm=np.linalg.norm(dip_vector)
     data=[[dip_vector[0]],[dip_vector[1]],[dip_vector[2]],[vec_norm]]
     dip_df=pd.DataFrame(data,index=['dip_x','dip_y','dip_z','total']).T
     dip_df.rename(index={0:xyz_lib.get_filename_list('xyz_')[0]},inplace=True)
@@ -501,7 +485,7 @@ txt_molecule_2.xyz          0.755886  ...            1.648676
         indexes.append(xyz_lib.get_filename_list('txt')[0])
         xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list('txt')[0])).drop([0,1],axis=0)
         for i in range(0,len(pairs)):
-            bond_length=(get_norm(xyz_df[['x','y','z']].iloc[pairs[i][0]].astype(float)-xyz_df[['x','y','z']].iloc[pairs[i][1]].astype(float)))
+            bond_length=(np.linalg.norm(xyz_df[['x','y','z']].iloc[pairs[i][0]].astype(float)-xyz_df[['x','y','z']].iloc[pairs[i][1]].astype(float)))
             bond_length_list.append(bond_length)
         dist_list.append(bond_length_list)
         delete_type_files()
@@ -546,11 +530,11 @@ def get_molecule_info(vib_num_filename):##add option to return ordered_info_df-l
     data,magnitude=[],[]
     for i in range(0,vib.shape[0]):
         data.append(vib.iloc[i][0:3].reset_index(drop=True))
-        magnitude.append(get_norm(vib.iloc[i][0:3].reset_index(drop=True)))
+        magnitude.append(np.linalg.norm(vib.iloc[i][0:3].reset_index(drop=True)))
         data.append(vib.iloc[i][3:6].reset_index(drop=True))
-        magnitude.append(get_norm(vib.iloc[i][3:6].reset_index(drop=True)))
+        magnitude.append(np.linalg.norm(vib.iloc[i][3:6].reset_index(drop=True)))
         data.append(vib.iloc[i][6:9].reset_index(drop=True))
-        magnitude.append(get_norm(vib.iloc[i][6:9].reset_index(drop=True)))
+        magnitude.append(np.linalg.norm(vib.iloc[i][6:9].reset_index(drop=True)))
     df=pd.DataFrame(data).reset_index(drop=True)
     df['magnitude']=magnitude
     df['frequency']=ordered_info_df.loc['Frequency[1/cm]']
@@ -609,7 +593,7 @@ class Molecule():
         self.molecule_path=os.path.abspath(molecule_dir_name)
         os.chdir(self.molecule_path)
         self.list_of_files=[filename for filename in os.listdir(self.molecule_path)]
-        self.coordinates_df=[convert_csv_to_xyz_df(file_name) for file_name in self.list_of_files if 'xyz_' in file_name][0]
+        self.coordinates_df=[convert_csv_to_xyz_df(file_name) for file_name in self.list_of_files if 'xyz_' in file_name][0] #fix atomic number ,dtype
         # self.dfs=pd.DataFrame([fr.csv_filename_to_dataframe(file_name) for file_name in self.list_of_files],index=self.list_of_files)
         os.chdir('../')
      
@@ -626,18 +610,24 @@ class Molecule():
         xyz_lib.dataframe_to_xyz(self.coordinates_df,xyz_lib.change_filetype(output_name,'_tc.xyz'))
         os.chdir('../')
         
+    def swap_atom_pair(self,pair_index): #swapping is permanently changed
+        pair=np.array(pair_index)-1
+        temp=self.coordinates_df.iloc[pair[0]].copy()
+        self.coordinates_df.iloc[pair[0]]=self.coordinates_df.iloc[pair[1]]
+        self.coordinates_df.iloc[pair[1]]=temp
+        return self.coordinates_df
         
     def get_df_tc(self,base_atoms_indexes):
         indexes=np.array(base_atoms_indexes)-1
         coor=np.array(self.coordinates_df[['x','y','z']])
         if (len(indexes)==4):
             new_origin=(coor[indexes[0]]+coor[indexes[1]])/2
-            new_y=(coor[indexes[2]]-new_origin)/get_norm((coor[indexes[2]]-new_origin))
-            coplane=((coor[indexes[3]]-new_origin)/get_norm((coor[indexes[3]]-new_origin)))
+            new_y=(coor[indexes[2]]-new_origin)/np.linalg.norm((coor[indexes[2]]-new_origin))
+            coplane=((coor[indexes[3]]-new_origin)/np.linalg.norm((coor[indexes[3]]-new_origin)))
         else:
             new_origin=coor[indexes[0]]
-            new_y=(coor[indexes[1]]-new_origin)/get_norm((coor[indexes[1]]-new_origin))
-            coplane=((coor[indexes[2]]-new_origin)/get_norm((coor[indexes[2]]-new_origin)))
+            new_y=(coor[indexes[1]]-new_origin)/np.linalg.norm((coor[indexes[1]]-new_origin))
+            coplane=((coor[indexes[2]]-new_origin)/np.linalg.norm((coor[indexes[2]]-new_origin)))
         cross_y_plane=np.cross(coplane,new_y)
         coef_mat=np.vstack([new_y, coplane, cross_y_plane])##
         angle_new_y_coplane=get_angle(coplane,new_y)
@@ -675,7 +665,7 @@ class Molecule():
             dip_xyz[i,2]=dip_comp_mat[i,2]*dip_comp_mat[i,3]
         for i in range(0,3):
             dip_vector.append(sum(dip_xyz[:,i]))
-        vec_norm=get_norm(dip_vector)
+        vec_norm=np.linalg.norm(dip_vector)
         array=np.hstack([dip_vector,vec_norm])
         dip_df=pd.DataFrame(array,index=['dip_x','dip_y','dip_z','total']).T
         dip_df.rename(index={0:self.get_filename('npa')},inplace=True)
@@ -688,7 +678,7 @@ class Molecule():
         bond_length_list=[]
         for i in range(0,len(pairs)):
             index.append(('bond length')+str(atom_pairs[i]))
-            bond_length=get_norm(coor[pairs[i][0]]-coor[pairs[i][1]])
+            bond_length=np.linalg.norm(coor[pairs[i][0]]-coor[pairs[i][1]])
             bond_length_list.append(bond_length)
         pairs_df=pd.DataFrame(bond_length_list,index=index)
         return pairs_df

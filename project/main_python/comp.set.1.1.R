@@ -450,6 +450,7 @@ steRimol <- function(mol.dir, coordinates, radii = 'CPK', only.sub = T, drop = N
           rlev <- rlev[-remove.vec]
         }
         rlev <- rlev[grep(paste("`", direction, "`", sep = ""), rlev)]
+        print(rlev)
         rlev_atoms <- as.numeric(stringr::str_extract_all(unique(unlist(rlev)), "[0-9]{1,3}"))
         substi <- substi[substi$rowname %in% rlev_atoms]
       }
