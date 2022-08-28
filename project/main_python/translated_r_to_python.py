@@ -617,7 +617,7 @@ class Molecule():
         
     def get_df_tc(self,base_atoms_indexes):
         indexes=np.array(base_atoms_indexes)-1
-        coor=np.array(self.coordinates_df[['x','y','z']])
+        coor=np.array(self.coordinates_df[['x','y','z']].astype(float))
         if (len(indexes)==4):
             new_origin=(coor[indexes[0]]+coor[indexes[1]])/2
             new_y=(coor[indexes[2]]-new_origin)/np.linalg.norm((coor[indexes[2]]-new_origin))
@@ -652,7 +652,7 @@ class Molecule():
     def get_dipole_df(self,base_atoms_indexes):
         atom_indexes=np.array(base_atoms_indexes)-1
         charges=self.get_specific_df('npa')
-        array=np.array(self.get_df_tc(atom_indexes))
+        array=np.array(self.get_df_tc(atom_indexes).astype(float))
         xyz_array=np.delete(array,0,1)
         dip_comp_mat=np.hstack([xyz_array,charges])
         dip_vector=[]
@@ -689,7 +689,7 @@ class Molecule():
             index=('Angle '+str(atom_indexes))
         else:
             index=('Dihedral '+str(atom_indexes))
-        coor=np.array(self.coordinates_df[['x','y','z']])
+        coor=np.array(self.coordinates_df[['x','y','z']].astype(float))
         if(len(indexes)==3):
             first_bond=coor[new_indexes[0]]-coor[new_indexes[1]]
             second_bond=coor[new_indexes[3]]-coor[new_indexes[2]]
@@ -711,12 +711,12 @@ class Molecules():
         
 if __name__=='__main__':
     # xyz_file_generator_library(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python','new_directory') #works
-    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole\molecule1'
+    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole'
    
     molecules=Molecules('test_dipole')
     molecule_1=molecules.molecules[0]
     os.chdir(path)
-    x=get_npa_dipole([2,3,4])
+    x=get_angles_df_from_csv([2,3,4])
     df=molecule_1.get_bond_angle([2,3,4])
 
     
