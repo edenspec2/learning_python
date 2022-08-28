@@ -81,13 +81,8 @@ def get_building_block(building_block_name='function_name', module=None):
     The function gets a building block name and returns the corresponding building block function 
     """
     function_dict=get_module_function_dict(module)
-<<<<<<< Updated upstream
-    actual_building_block=function_dict.get(building_block_name)
-    return actual_building_block
-=======
     building_block=function_dict.get(building_block_name)
     return building_block
->>>>>>> Stashed changes
 
 ## for use in check_building_block_solely
 def check_input_validity(building_block, validation_data):
@@ -229,7 +224,9 @@ class QATester():
     
 if __name__=='__main__':
     # filename='test_dipole'
-    print(base_module.get_angles_df_from_csv([2, 3, 5], ))
+    path=r"GitHub\learning_python\project\main_python\test_dipole"
+    df=base_module.get_angles_df_from_csv([2,3,4])
+    print(df)
     # dir with moledir -> in every dir there csv file of the xyz coord -> 'xyz_molecule_1.csv' -> return angles df
     # def get_angle(p1, p2):
     #     from scipy.spatial.distance import cosine
