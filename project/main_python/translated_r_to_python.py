@@ -43,6 +43,27 @@ class GeneralConstants(Enum):
             'Pa': 2.00, 'U': 1.96, 'Np': 1.90, 'Pu': 1.87,
             'Am': 1.80, 'Cm': 1.69
     }
+    
+    CPK_RADII={
+        'H': 1.10, 'C': 1.70, 'F': 1.47,
+        'S': 1.80, 'B': 1.92, 'I': 1.98, 
+        'N': 1.55, 'O': 1.52, 'Co': 2.00, 
+        'Br': 1.83, 'Si': 2.10,'Ni': 2.00,
+        'P': 1.80, 'Cl': 1.75, 
+    }
+    
+    BONDI_RADII={
+        'C':1.50,   'H':1.00,   'S.O':1.70,  'Si':2.10,
+        'C2':1.60,  'N':1.50,   'S1':1.00,   'Co':2.00,
+        'C3':1.60,  'C66':1.70, 'F':1.35,    'Ni':2.00,
+        'C4':1.50,  'N4':1.45,  'Cl':1.80,
+        'C5/N5':1.70, 'O':1.35, 'S4':1.40,
+        'C6/N6':1.70, 'O2':1.35, 'Br':1.95,
+        'C7':1.70,    'P':1.40,  'I':2.15,
+        'C8':1.50,    'S':1.70,  'B':1.92,
+    
+    }
+    
 
     ATOMIC_NUMBERS ={
     'atom':{ '1':'H', '5':'B', '6':'C', '7':'N', '8':'O', '9':'F', '14':'Si',
@@ -88,27 +109,21 @@ def delete_type_files(file_type='xyz'): ## my help function to delete xyz files
         os.remove(os.path.abspath(molecule))
         
 def convert_csv_to_xyz_df(csv_filename):
-    xyz_df=fr.csv_filename_to_dataframe(csv_filename) ### adding columns not working
+    xyz_df=fr.csv_filename_to_dataframe(csv_filename)
     xyz_df.rename(columns={0:'atom',1:'x',2:'y',3:'z'},inplace=True)
-    xyz_df.replace(GeneralConstants.ATOMIC_NUMBERS.value,inplace=True)
+    xyz_df.replace(GeneralConstants.ATOMIC_NUMBERS.value,inplace=True)###change 'atom' to astype(int)
     return xyz_df
    
-class XYZHandler():
-    """
-    A data handler for XYZ files
-    """
 
-    def __init__(self):
-        self.opened_xyz_files=[]
-
-    def open_xyz_data_from_csv(self, csv_filename):
-        xyz_df=convert_csv_to_xyz_df(csv_filename)
-        self.opened_xyz_files.append(xyz_df)
 
 def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-currently the R function generates filename without 'xyz_'.
     """
     a function that gets a directory path as folder_path, makes xyz files from all csv files in the same directory.
     This is a void function
+    works in a specific molecule directory.
+    example:
+        path=GitHub\learning_python\project\main_python\test_dipole\molecule1
+        xyz_file_generator(path)
     """
     os.chdir(folder_path)
     list_of_csv_files=xyz_lib.get_filename_list('xyz_') #changed to 'xyz_' from .csv
@@ -144,14 +159,15 @@ def move_xyz_files_directory(current_directory,new_directory):#my help function
         os.replace(current_path,new_path)
     return
                        
-def xyz_file_generator_library(files_directory_path, directory_name): ###works, name in R:'xyz_file_generator_library'
+def xyz_file_generator_library(files_directory_path, directory_name): ###not working, name in R:'xyz_file_generator_library'
     """
     a void function
+
     """
     path=os.path.join(files_directory_path,directory_name)
     try:
         os.mkdir(path)
-        xyz_file_generator(files_directory_path)
+        xyz_file_generator(files_directory_path)            ## edit to one function
         move_xyz_files_directory(files_directory_path,path)
     except FileExistsError:
         xyz_file_generator(files_directory_path)
@@ -169,7 +185,6 @@ def change_file_name(files_directory_path,old_file_name,new_file_name):###works,
     for molecule in list_of_molecules:
         if (molecule==old_file_name):
             os.rename(molecule,new_file_name)
-    
     return
 
 def get_angle(p1, p2): ###works, name in R: 'angle' 
@@ -183,9 +198,14 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
     """
     A function that gets directory path, molecule file name, and the indexes of the atoms to swap, and overwrite the xyz file with the swapped pair.
     A void function
+    
+    example:
+    -------
+    path='learning_python\project\main_python\test_dipole\molecule1'
+    molecule_atom_swapper(path,'txt_molecule_1.xyz',[2,4])
     """
     os.chdir(files_directory_path)
-    list_of_molecules=[file for file in os.listdir(files_directory_path) if file.endswith('xyz')]
+    list_of_molecules=xyz_lib.get_filename_list('txt')
     index_1,index_2=(*indexes,)
     index_1+=-1
     index_2+=-1
@@ -198,38 +218,58 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
             xyz_file.iloc[index_1] = c
             xyz_file.iloc[index_2] = temp
             xyz_lib.dataframe_to_xyz(xyz_file,molecule)
+    os.chdir('../')
     return 
 
 
 def get_specific_molecule_df(molecule_file_name):
     pass
 
-def get_norm(molecule):###help function
-    """
-    a function that gets xyz coordinates as dataframe and returns the sum of square roots.
-    """
-    norm=0
-    for i in range(0,len(molecule)):
-       norm+=(float(molecule[i]))**2
-    return math.sqrt(norm)
+
 
                                                     #only the number of them
-def coordination_transformation(molecule_file_name,base_atoms_indexes,return_variables=False):#origin_atom, y_direction_atom, xy_plane_atom
+def coordination_transformation(coor_file_name,base_atoms_indexes,return_variables=False):#origin_atom, y_direction_atom, xy_plane_atom
+    """
+    this function works inside a molecule directory,
+    it takes molecule coordinates as csv of xyz, and new base atoms, and creates a new xyz file with shifted coordinates
+    has the option to return a df of new coordinates.
+    
+    
+    parameters:
+    ----------
+    molecule_file_name: str
+        name of molecule coordinates file.
+    base_atoms_indexes: list of nums
+        indexes of new atoms to shift coordinates by.
+    return_variables: bool
+        default False- do not return array variable, return df if True.
+        
+    returns:
+        creates a tc.xyz file.
+    -------
+    transformed_coordinates_array-optional: np.array
+        new coordinates after transformation
+        
+    example:
+    -------
+    coordination_transformation('xyz_molecule_1.csv',[2,3,4])
+    
+    """
     indexes=np.array(base_atoms_indexes)-1
     try:
-        molecule=(xyz_to_ordered_DataFrame(molecule_file_name)).drop([0,1],axis=0)
+        molecule=(xyz_to_ordered_DataFrame(coor_file_name)).drop([0,1],axis=0)
         molecule=molecule.reset_index()
 
     except: #this way it works on csv file as well
-        molecule=convert_csv_to_xyz_df(molecule_file_name)
+        molecule=convert_csv_to_xyz_df(coor_file_name)
     if (len(indexes)==4):
         new_origin=(molecule[['x','y','z']].iloc[indexes[0]].astype(float)+molecule[['x','y','z']].iloc[indexes[1]].astype(float))/2
-        new_y=(molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin))
-        coplane=((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)))
+        new_y=(molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/np.linalg.norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin))
+        coplane=((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)/np.linalg.norm((molecule[['x','y','z']].iloc[indexes[3]].astype(float)-new_origin)))
     else:
         new_origin=molecule[['x','y','z']].iloc[indexes[0]].astype(float)
-        new_y=(molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin))
-        coplane=((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/get_norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)))
+        new_y=(molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin)/np.linalg.norm((molecule[['x','y','z']].iloc[indexes[1]].astype(float)-new_origin))
+        coplane=((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/np.linalg.norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)))
     cross_y_plane=pd.Series(np.cross(coplane,new_y),index=['x','y','z'])
     coef_mat=(pd.concat([new_y, coplane, cross_y_plane], axis=1)).T
     angle_new_y_coplane=get_angle(coplane,new_y)
@@ -245,10 +285,10 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes,return_var
         x=(molecule[['x','y','z']].iloc[i].astype(float)-new_origin)
         new_coordinates.append(x)
         transformed_coordinates.append(np.dot(new_basis,x))
-    transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4)
+    transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4) ## check if rounding is needed
     atom_array=molecule['atom'].to_numpy()
     transformed_array=np.column_stack((atom_array,transformed_coordinates_array))
-    new_filename=xyz_lib.change_filetype(molecule_file_name,'_tc.xyz')
+    new_filename=xyz_lib.change_filetype(coor_file_name,'_tc.xyz')
     if return_variables==False:
         with open(new_filename, 'w') as xyz_file:
             xyz_file.write("{}\n{}\n".format(transformed_array.shape[0],''))
@@ -259,7 +299,7 @@ def coordination_transformation(molecule_file_name,base_atoms_indexes,return_var
      
 
      
-def coordination_transformation_entire_dir(files_directory_path,base_atoms_indexes):
+def coordination_transformation_entire_dir(files_directory_path,base_atoms_indexes):##not used in code
     os.chdir(files_directory_path)
     list_of_molecules=[file for file in os.listdir(files_directory_path) if file.endswith('xyz')]
     for molecule in list_of_molecules:
@@ -267,8 +307,9 @@ def coordination_transformation_entire_dir(files_directory_path,base_atoms_index
     os.chdir('../')
     
     
-def get_npa_dipole(base_atoms_indexes,sub_atoms=None, file_type='npa', center_of_mass=False):##working- possible to add subunits without xyz files ???
+def get_npa_dipole(base_atoms_indexes,sub_atoms=None, file_type='npa', center_of_mass=False):##add error massage if file not found
     """
+    works inside molecule directory.
     *this function runs on get_npa_dipole so doesnt need path consider adding option for single molecule_dir like in R
     Parameters
     ----------
@@ -299,7 +340,7 @@ xyz_csv_file_for_r_1.csv  0.097437 -0.611775  0.559625  0.834831
         dip_comp_mat[6].iloc[i]=dip_comp_mat[2].iloc[i]*dip_comp_mat[3].iloc[i]
     for i in range(4,7):
         dip_vector.append(sum(dip_comp_mat[i]))
-    vec_norm=get_norm(dip_vector)
+    vec_norm=np.linalg.norm(dip_vector)
     data=[[dip_vector[0]],[dip_vector[1]],[dip_vector[2]],[vec_norm]]
     dip_df=pd.DataFrame(data,index=['dip_x','dip_y','dip_z','total']).T
     dip_df.rename(index={0:xyz_lib.get_filename_list('xyz_')[0]},inplace=True)
@@ -326,8 +367,8 @@ def get_npa_dipole_df(molecules_dir_path):
                        dip_x     dip_y     dip_z    total
 xyz_molecule_1.csv -0.752835  0.026260  0.236615  0.78958
 xyz_molecule_2.csv  1.120679  2.329781 -1.416985  2.94816
-
     """
+    os.chdir(molecules_dir_path)
     molecules=[molecule_dir for molecule_dir in os.listdir(molecules_dir_path) if os.path.isdir(molecule_dir)]
     base_atoms_input=input('Enter atoms - origin atom, y axis atom and xy plane atom with spaces:')
     base_atoms_indexes=base_atoms_input.split()
@@ -350,6 +391,20 @@ xyz_molecule_2.csv  1.120679  2.329781 -1.416985  2.94816
 def get_angles_df_from_csv(atoms_indexes, filename=None): #gets a list of atom indexes
     """
     a function that gets 3/4 atom indexes, and returns a df of angles-either agnle or dihedral
+    works on a directory containing other directories of molecule csv files.
+    Parameters
+    ----------
+    atoms_indexes- list of ints
+        a list of atom indexes to calculate the angle between- [2,3,4]
+   
+    Returns
+    -------
+    df=get_angles_df_from_csv([2,3,4])
+    angle_df-a dataframe containing molecule name and the angle calculated between chosen atoms.
+                    Angle [2, 3, 4]
+molecule                           
+txt_molecule_1.xyz       120.835613
+txt_molecule_2.xyz       166.494119
     """
     indexes=np.array(atoms_indexes)-1 #three atoms-angle four atoms-dihedral
     if len(indexes)==3:
@@ -367,13 +422,13 @@ def get_angles_df_from_csv(atoms_indexes, filename=None): #gets a list of atom i
         xyz_file_generator(os.path.abspath(molecule))
         os.chdir(os.path.abspath(molecule))     
                                  ##need fix-dont make xyz out of dipole/ currently npa-xsls type
-        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])).drop([0,1],axis=0)
+        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list('txt')[0]).drop([0,1],axis=0))
         xyz_df.reset_index()
         if(len(indexes)==3):
             first_bond=xyz_df[['x','y','z']].iloc[new_indexes[0]].astype(float)-xyz_df[['x','y','z']].iloc[new_indexes[1]].astype(float)
             second_bond=xyz_df[['x','y','z']].iloc[new_indexes[3]].astype(float)-xyz_df[['x','y','z']].iloc[new_indexes[2]].astype(float)
             angle_df.loc[len(angle_df.index)]=(get_angle(first_bond, second_bond))*(180/math.pi)
-            index_name.append(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])
+            index_name.append(xyz_lib.get_filename_list('txt')[0])
             
         else:
             first_bond=xyz_df[['x','y','z']].iloc[indexes[0]].astype(float)-xyz_df[['x','y','z']].iloc[indexes[1]].astype(float)
@@ -393,37 +448,275 @@ def get_angles_df_from_xyz(atoms_indexes): ### very similar to get_angles_df_fro
     pass
             
 def get_bond_lengths(atom_pairs): ##creates xyz from csv, input as '2 3 4 5 6'
+    """
+    
+    a function that gets input string of pairs of atoms indexes split them to pairs and calcultes
+    the distance between each pair for every molecule.
+    this function works on directory of molecule directorys.
+    
+    Parameters
+    ----------
+    atom_pairs : str
+        a string of atom indexes pairs- '2 3 4 5'
+        
+    *this function takes parameters for get_npa_dipole with input commmand
+    
+    Returns
+    -------
+    pairs_df : dataframe
+        distance between each pair in every molecule.
+        
+        Output:
+                    bond length[1 2]  ...  bond length[11 12]
+txt_molecule_1.xyz          1.525692  ...            1.648676
+txt_molecule_2.xyz          0.755886  ...            1.648676
+    
+    """
     pairs=(np.array([atom_pairs.split()[i:i+2] for i in range(0,len(atom_pairs.split()),2)],dtype=int))-1
     molecules=[molecule_dir for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)]    
-    columns=[('bond length'+str(pairs[i])) for i in range(0,len(pairs))]
+    columns=[('bond length'+str(pairs[i]+1)) for i in range(0,len(pairs))]
     dist_list,indexes=[],[]
     for molecule in molecules:
         bond_length_list=[]
         xyz_file_generator(os.path.abspath(molecule))
         os.chdir(os.path.abspath(molecule))
-        indexes.append(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])
-        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)[0])).drop([0,1],axis=0)
+        indexes.append(xyz_lib.get_filename_list('txt')[0])
+        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list('txt')[0])).drop([0,1],axis=0)
         for i in range(0,len(pairs)):
-            bond_length=(get_norm(xyz_df[['x','y','z']].iloc[pairs[i][0]].astype(float)-xyz_df[['x','y','z']].iloc[pairs[i][1]].astype(float)))
+            bond_length=(np.linalg.norm(xyz_df[['x','y','z']].iloc[pairs[i][0]].astype(float)-xyz_df[['x','y','z']].iloc[pairs[i][1]].astype(float)))
             bond_length_list.append(bond_length)
         dist_list.append(bond_length_list)
         delete_type_files()
         os.chdir('../')
     pairs_df=pd.DataFrame(dist_list,columns=columns,index=indexes)
     return pairs_df
-            
 
+def get_molecule_info(vib_num_filename):##add option to return ordered_info_df-like dot.prod.info
+    """
+    a function that convert info.csv file into ordered dataframe, gets a vibration file and returns
+    the frequecy and IR with the max magnitude for the vibration.
+    splits the coordinates of vib to 3 coordinates and calculates the magnituede. takes frequencys greter than 1500
+    and returns the frequency and IR corresponding to max magnitude.
+    
+    works in a specific molecule directory
+    
+    Parameters
+    ----------
+    vib_num_filename : str
+        name of vib file.
 
+    Returns
+    -------
+    dataframe
+        max frequency and IR for specific vibration.
         
+    Output:
+                                            54
+                        Frequency[1/cm]  1689.5945
+                        IR intensity        6.5260
+    """
+    info=xyz_lib.convert_tabular_text_to_matrix(xyz_lib.get_filename_list('info')[0])
+    seperated_info=[info[i][0].split() for i in range(0,len(info))]
+    info_df=pd.DataFrame(seperated_info)
+    info_df.set_axis(info_df[0],inplace=True)
+    frequencies=info_df.loc['Frequencies'][[2,3,4]]
+    ir=info_df.loc['IR'][[3,4,5]]
+    frequencies_list = [item for sublist in frequencies.values.tolist() for item in sublist]
+    ir_list=[item for sublist in ir.values.tolist() for item in sublist]
+    ordered_info_df=pd.DataFrame([frequencies_list,ir_list], index=['Frequency[1/cm]','IR intensity'],dtype=float)
+    vib=(fr.csv_filename_to_dataframe(vib_num_filename)).drop([0,1],axis=1)
+    data,magnitude=[],[]
+    for i in range(0,vib.shape[0]):
+        data.append(vib.iloc[i][0:3].reset_index(drop=True))
+        magnitude.append(np.linalg.norm(vib.iloc[i][0:3].reset_index(drop=True)))
+        data.append(vib.iloc[i][3:6].reset_index(drop=True))
+        magnitude.append(np.linalg.norm(vib.iloc[i][3:6].reset_index(drop=True)))
+        data.append(vib.iloc[i][6:9].reset_index(drop=True))
+        magnitude.append(np.linalg.norm(vib.iloc[i][6:9].reset_index(drop=True)))
+    df=pd.DataFrame(data).reset_index(drop=True)
+    df['magnitude']=magnitude
+    df['frequency']=ordered_info_df.loc['Frequency[1/cm]']
+    outer_finger=(df['frequency'].astype(float)>1500)
+    index_max=df[outer_finger]['magnitude'].idxmax()
+    frequency=(df['frequency'][index_max]).astype(float)
+    mask=(ordered_info_df.T)['Frequency[1/cm]']==frequency
+    # return ordered_info_df
+    return (ordered_info_df.T)[mask].T
+
+def get_nbo_info(molecule_dir,atom_indexes):##run with get nbo_info_df
+    os.chdir(molecule_dir)
+    nbo_file=fr.csv_filename_to_dataframe(xyz_lib.get_filename_list('nbo')[0])
+    return nbo_file.iloc[atom_indexes].T
+
+def coor_for_sterimol(bonds_df,coordinates):
+    origin,direction=coordinates[0],coordinates[1]
+    try :
+        coordinates[2]==origin
+        if(any(bonds_df[0]==direction)):
+            coordinates[2]=int(bonds_df[(bonds_df[0]==direction)][1].iloc[1])
+        else:
+            coordinates[2]=int(bonds_df[(bonds_df[1]==direction)][0].iloc[1])
+    except: 
+        if (any(bonds_df[0]==direction)):
+            coordinates.append(int(bonds_df[(bonds_df[0]==direction)][1].iloc[0]))
+        else:
+            coordinates.append(int(bonds_df[(bonds_df[1]==direction)][0].iloc[0]))
+    return coordinates
+
+            
+            
+# def get_sterimol_info(molecule_dir, coordinates, radii = 'CPK', only_sub = True, drop = None):
+#     xyz_file_generator(molecule_dir)
+#     os.chdir(molecule_dir)
+#     bonds=fr.csv_filename_to_dataframe(xyz_lib.get_filename_list('bonds')[0])
     
 
+class Molecule():
+    """
+    """
+    def __init__(self,molecule_dir_name):
+        """
+
+        Parameters
+        ----------
+        directory_path : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        self.molecule_path=os.path.abspath(molecule_dir_name)
+        os.chdir(self.molecule_path)
+        self.list_of_files=[filename for filename in os.listdir(self.molecule_path)]
+        self.coordinates_df=[convert_csv_to_xyz_df(file_name) for file_name in self.list_of_files if 'xyz_' in file_name][0] #fix atomic number ,dtype
+        # self.dfs=pd.DataFrame([fr.csv_filename_to_dataframe(file_name) for file_name in self.list_of_files],index=self.list_of_files)
+        os.chdir('../')
+     
+    def get_filename(self,file_type):
+        return [file_name for file_name in self.list_of_files if file_type in file_name][0]
+    def get_specific_df(self,file_type): ##info df will not be ordered
+        os.chdir(self.molecule_path)
+        df=fr.csv_filename_to_dataframe([file_name for file_name in self.list_of_files if file_type in file_name][0])
+        os.chdir('../')
+        return df
+    def export_coordinates_to_xyz(self):
+        os.chdir(self.molecule_path)
+        output_name=[file_name for file_name in self.list_of_files if 'xyz_' in file_name][0]
+        xyz_lib.dataframe_to_xyz(self.coordinates_df,xyz_lib.change_filetype(output_name,'_tc.xyz'))
+        os.chdir('../')
+        
+    def swap_atom_pair(self,pair_index): #swapping is permanently changed
+        pair=np.array(pair_index)-1
+        temp=self.coordinates_df.iloc[pair[0]].copy()
+        self.coordinates_df.iloc[pair[0]]=self.coordinates_df.iloc[pair[1]]
+        self.coordinates_df.iloc[pair[1]]=temp
+        return self.coordinates_df
+        
+    def get_df_tc(self,base_atoms_indexes):
+        indexes=np.array(base_atoms_indexes)-1
+        coor=np.array(self.coordinates_df[['x','y','z']])
+        if (len(indexes)==4):
+            new_origin=(coor[indexes[0]]+coor[indexes[1]])/2
+            new_y=(coor[indexes[2]]-new_origin)/np.linalg.norm((coor[indexes[2]]-new_origin))
+            coplane=((coor[indexes[3]]-new_origin)/np.linalg.norm((coor[indexes[3]]-new_origin)))
+        else:
+            new_origin=coor[indexes[0]]
+            new_y=(coor[indexes[1]]-new_origin)/np.linalg.norm((coor[indexes[1]]-new_origin))
+            coplane=((coor[indexes[2]]-new_origin)/np.linalg.norm((coor[indexes[2]]-new_origin)))
+        cross_y_plane=np.cross(coplane,new_y)
+        coef_mat=np.vstack([new_y, coplane, cross_y_plane])##
+        angle_new_y_coplane=get_angle(coplane,new_y)
+        new_origin=coor[indexes[0]] ### check with shahar cause this line make no sense for 4 atom coor. this line exists in R.
+        cop_ang_x=angle_new_y_coplane-(np.pi/2)
+        result_vector=[0,np.cos(cop_ang_x),0]
+        new_x=np.linalg.solve(coef_mat,result_vector)
+        new_z=np.cross(new_x,new_y)
+        new_basis=np.vstack([new_x, new_y, new_z])
+        new_coordinates=[]
+        transformed_coordinates=[]
+        for i in range(0,(coor.shape[0])):
+            x=(coor[i]-new_origin)
+            new_coordinates.append(x)
+            transformed_coordinates.append(np.dot(new_basis,x))
+        transformed_coordinates_array=(np.vstack(transformed_coordinates)).round(4) ## check if rounding is needed
+        atom_array=self.coordinates_df['atom'].to_numpy()
+        transformed_array=np.column_stack((atom_array,transformed_coordinates_array))
+        df_tc=pd.DataFrame(transformed_array)
+        df_tc.rename(columns={0:'atom',1:'x',2:'y',3:'z'},inplace=True)
+        df_tc.replace(GeneralConstants.ATOMIC_NUMBERS.value,inplace=True)#
+        return df_tc
+    
+    def get_dipole_df(self,base_atoms_indexes):
+        atom_indexes=np.array(base_atoms_indexes)-1
+        charges=self.get_specific_df('npa')
+        array=np.array(self.get_df_tc(atom_indexes))
+        xyz_array=np.delete(array,0,1)
+        dip_comp_mat=np.hstack([xyz_array,charges])
+        dip_vector=[]
+        dip_xyz=np.empty((dip_comp_mat.shape[0],3)) ### create empty new column-checked as empty]
+        for i in range(0,dip_comp_mat.shape[0]):
+            dip_xyz[i,0]=dip_comp_mat[i,0]*dip_comp_mat[i,3]
+            dip_xyz[i,1]=dip_comp_mat[i,1]*dip_comp_mat[i,3]
+            dip_xyz[i,2]=dip_comp_mat[i,2]*dip_comp_mat[i,3]
+        for i in range(0,3):
+            dip_vector.append(sum(dip_xyz[:,i]))
+        vec_norm=np.linalg.norm(dip_vector)
+        array=np.hstack([dip_vector,vec_norm])
+        dip_df=pd.DataFrame(array,index=['dip_x','dip_y','dip_z','total']).T
+        dip_df.rename(index={0:self.get_filename('npa')},inplace=True)
+        return dip_df
+         
+    def get_bond_length(self,atom_pairs):##input-([2,3],[4,5])
+        pairs=np.array(atom_pairs)-1
+        index=[]
+        coor=np.array(self.coordinates_df[['x','y','z']])
+        bond_length_list=[]
+        for i in range(0,len(pairs)):
+            index.append(('bond length')+str(atom_pairs[i]))
+            bond_length=np.linalg.norm(coor[pairs[i][0]]-coor[pairs[i][1]])
+            bond_length_list.append(bond_length)
+        pairs_df=pd.DataFrame(bond_length_list,index=index)
+        return pairs_df
+    
+    
+    def get_bond_angle(self,atom_indexes): ##need expand to many angles
+        indexes=np.array(atom_indexes)-1 #three atoms-angle four atoms-dihedral
+        if len(indexes)==3:
+            new_indexes=[indexes[0],indexes[1],indexes[1],indexes[2]]
+            index=('Angle '+str(atom_indexes))
+        else:
+            index=('Dihedral '+str(atom_indexes))
+        coor=np.array(self.coordinates_df[['x','y','z']])
+        if(len(indexes)==3):
+            first_bond=coor[new_indexes[0]]-coor[new_indexes[1]]
+            second_bond=coor[new_indexes[3]]-coor[new_indexes[2]]
+            angle=get_angle(first_bond, second_bond)*(180/math.pi)
+        else:
+            first_bond=coor[indexes[0]]-coor[indexes[1]]
+            second_bond=coor[indexes[2]]-coor[indexes[1]]
+            third_bond=coor[indexes[3]]-coor[indexes[2]]
+            first_cross=np.cross(first_bond,second_bond)
+            second_cross=np.cross(third_bond,second_bond)
+            angle=get_angle(first_cross, second_cross)*(180/math.pi)
+        return angle
+        
+class Molecules():
+    def __init__(self,molecules_dir_name):
+        self.molecules_path=os.path.abspath(molecules_dir_name)
+        os.chdir(self.molecules_path)
+        self.molecules=[Molecule(molecule_dir) for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)] 
+        
 if __name__=='__main__':
     # xyz_file_generator_library(r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python','new_directory') #works
-    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole'
+    path=r'C:\Users\edens\Documents\GitHub\learning_python\project\main_python\test_dipole\molecule1'
+   
+    molecules=Molecules('test_dipole')
+    molecule_1=molecules.molecules[0]
     os.chdir(path)
-    df=get_angles_df_from_csv([2,3,4])
-
-    df2=get_bond_lengths('2 3 4 5 6 7 8 9 10 11 12 13')
-    
+    x=get_npa_dipole([2,3,4])
+    df=molecule_1.get_bond_angle([2,3,4])
 
     

@@ -22,14 +22,14 @@ class XYZConstants(Enum):
     """
     DF_COLUMNS=['atom','x','y','z']
 
-def get_filename_list(file_extension):
+def get_filename_list(file_identifier):
     """
     The function gets a file extension as input and returns a list of all files in the working directory
     ----------
     Parameters
     ----------
     file_extension : str.
-        The wanted file extension like '.csv' or '.ppt'
+        The wanted file identifier like 'txt','info','nbo'..
     -------
     Returns
     -------
@@ -53,7 +53,7 @@ def get_filename_list(file_extension):
         ['1106253.cif', '1109098.cif']    
     """
     from os import listdir
-    return [filename for filename in listdir() if file_extension in filename] ## changed to fit npa dipole
+    return [filename for filename in listdir() if file_identifier in filename] 
 
 def get_file_lines(filename, encoding=None):
     """ 
@@ -185,9 +185,9 @@ def get_dataframe_from_splitted_lines(splitted_lines, columns=None):
     """
     
     if columns:
-        df=pd.DataFrame(splitted_lines, columns=columns)
+        df=pd.DataFrame(splitted_lines, columns=columns,dtype=float)
     else:
-        df=pd.DataFrame(splitted_lines)
+        df=pd.DataFrame(splitted_lines,dtype=float)
     return df
 
 def get_normalize_coordinates(df,coordinates_normalize_parameter):
