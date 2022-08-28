@@ -617,7 +617,7 @@ class Molecule():
         
     def get_df_tc(self,base_atoms_indexes):
         indexes=np.array(base_atoms_indexes)-1
-        coor=np.array(self.coordinates_df[['x','y','z']])
+        coor=np.array(self.coordinates_df[['x','y','z']].astype(float))
         if (len(indexes)==4):
             new_origin=(coor[indexes[0]]+coor[indexes[1]])/2
             new_y=(coor[indexes[2]]-new_origin)/np.linalg.norm((coor[indexes[2]]-new_origin))
@@ -652,7 +652,7 @@ class Molecule():
     def get_dipole_df(self,base_atoms_indexes):
         atom_indexes=np.array(base_atoms_indexes)-1
         charges=self.get_specific_df('npa')
-        array=np.array(self.get_df_tc(atom_indexes))
+        array=np.array(self.get_df_tc(atom_indexes).astype(float))
         xyz_array=np.delete(array,0,1)
         dip_comp_mat=np.hstack([xyz_array,charges])
         dip_vector=[]
