@@ -1,13 +1,26 @@
 from enum import Enum
 import numpy as np
 import dis
+import time
 
-import comp_set
-
-import sys
-folder_path=r'C:\Users\\itaro\OneDrive\Documents\GitHub\learning_python\project\main_python.'
-sys.path.insert(0, folder_path)
 import translated_r_to_python as base_module
+
+class CustomModules(Enum):
+    INNERMODULES=[base_module,]
+
+class ValidationData(Enum):
+    """
+    Holds validation referral dictionary, where every key is the name of the function, and the value is the input data to validate the function works well
+    """
+    DATA_DICT={'coordination_transformation': (),
+               'get_angles_df_from_csv': (),
+               'get_norm': (),
+               'get_npa_dipole': (),
+               'get_angle': (np.array([0, -0.75545, 0.58895]), np.array([ 0, -1.5109, 0]), ), #0.66217
+               } 
+
+def get_validation_data(building_block_name):
+    return ValidationData.DATA_DICT.value.get(building_block_name)
 
 def get_function_inner_calls(function):
     used_functions={}
@@ -31,7 +44,7 @@ def get_module_function_dict(module):
     'run_calculation': <function run_calculation at 0x000002DCE736AC18>}
     """
     from inspect import getmembers, isfunction
-    function_dict=dict(getmembers(module, isfunction)) #getmembers()- return information on an object class,function etc, isfunction is the condition to return info only on functions
+    function_dict=dict(getmembers(module, isfunction)) 
     return function_dict
 
 def get_module_function_inner_calls(module):
@@ -63,21 +76,18 @@ def get_module_function_outer_calls(module):
                 function_outer_calls.update({key: list(val.keys())})
     return function_outer_calls
         
-class ValidationData(Enum):
-    """
-    Holds validation referral dictionary, where every key is the name of the function, and the value is the input data to validate the function works well
-    """
-    DATA_DICT={'coordination_transformation': [],
-               'get_norm': [],
-               'get_npa_dipole': [],} 
-
 def get_building_block(building_block_name='function_name', module=None):
     """
-    The function gets a building block name and returns the corresponding old building block actual function 
+    The function gets a building block name and returns the corresponding building block function 
     """
     function_dict=get_module_function_dict(module)
+<<<<<<< Updated upstream
     actual_building_block=function_dict.get(building_block_name)
     return actual_building_block
+=======
+    building_block=function_dict.get(building_block_name)
+    return building_block
+>>>>>>> Stashed changes
 
 ## for use in check_building_block_solely
 def check_input_validity(building_block, validation_data):
@@ -90,31 +100,49 @@ def check_input_validity(building_block, validation_data):
     except:
         return False
 
+def get_building_block_output_and_duration(building_block, validation_data, time_loop_number=100):
+    if not check_input_validity(building_block, validation_data):
+        return 0, 0
+    start_time=time.time()
+    for _ in range(time_loop_number):
+        output=building_block(*validation_data)
+    stop_time=time.time()
+    avg_run_time=(stop_time-start_time)/time_loop_number
+    return output, avg_run_time
+
 def relative_error(number_1, number_2):
     return 100*abs(number_1-number_2)/min(number_1, number_2)
 
 def compare_numeric_results(number_1, number_2, error_percentage=1):
     if relative_error(number_1, number_2)<=error_percentage:
         return True
-    return False
+    return False 
 
 # Assumes that the output types is identical
 def compare_output_results(output_1, output_2, error_percentage=1):
     if isinstance(output_1, float) or isinstance(output_1, int): 
         return compare_numeric_results(output_1, output_2, error_percentage)
             
-def check_building_block_solely(new_building_block_name, new_building_block, validation_data=None, module=None):
+def check_building_block_solely(building_block_1, building_block_2, validation_data=None):
     """
     The function a new building block and validation data, and checks whether the operation of the new building block
     is identical to the old building block it suppose to replace.
     The function will return True if the operation is identical and False otherwise
     """
-    old_building_block=get_building_block(new_building_block_name, module)
-    if check_input_validity(old_building_block,(validation_data)):
-        if check_input_validity(new_building_block,(validation_data)):
-            return compare_output_results(old_building_block(*validation_data), new_building_block(*validation_data))
-    else:
-        return False
+    output_1, output_1_time=get_building_block_output_and_duration(building_block_1, validation_data)
+    output_2, output_2_time=get_building_block_output_and_duration(building_block_2, validation_data)
+    return compare_output_results(output_1, output_2)
+
+def git_push(git_repo_path, commit_message):
+    from git import Repo
+    try:
+        repo=Repo(git_repo_path) #local path
+        repo.git.add(update=True)
+        repo.index.commit(commit_message)
+        origin=repo.remote(name='origin') # name?
+        origin.push()
+    except:
+        print('Error pushing to github')
 
 ###Assumption - Output -> Input in automation cycles
 ##def run_automation_cycle(module, automation_cycle, validation_data):
@@ -130,23 +158,23 @@ def check_building_block_solely(new_building_block_name, new_building_block, val
 ##        mid_results=actual_function(mid_results)
 ##    return mid_results
 
-def check_building_block_integration(module, new_building_block_name, automation_cycle,validation_data): 
-    """
-    The function get a building block, it's name and the automation cycle wanted for testing.
-    The function will run the automation cycle as is and with the new building block - and checks whether the results are identical.
-    The function will return True if the operation is identical and False otherwise
-    use dictionary of new and old names to change between the 
-    """
-    automated_results=run_automation_cycle(module, automation_cycle,validation_data)
-    return automated_results
+##def check_building_block_integration(module, new_building_block_name, automation_cycle,validation_data): 
+##    """
+##    The function get a building block, it's name and the automation cycle wanted for testing.
+##    The function will run the automation cycle as is and with the new building block - and checks whether the results are identical.
+##    The function will return True if the operation is identical and False otherwise
+##    use dictionary of new and old names to change between the 
+##    """
+##    automated_results=run_automation_cycle(module, automation_cycle,validation_data)
+##    return automated_results
 
 class QATester():
     """
     The object get a potential new building block and it's name and tests wheather is equivalent for replace
     Consider check excuation times as well (solo run only?)
-    Consider also doing the replacement if validation is ok - if so - leave testing results as documentatio
+    Consider also doing the replacement if validation is ok - if so - leave testing results as documentation
     """
-    def __init__(self, new_building_block_name, new_building_block, module):
+    def __init__(self, new_building_block, module):
         """
         Inital input:
         
@@ -157,94 +185,63 @@ class QATester():
         new_building_block - function(instance)
         the actual function submitted for testing
         """
-        self.new_building_block_name=new_building_block_name
+        self.new_building_block_name=new_building_block.__name__
         self.new_building_block=new_building_block
         self.module=module
-        self.original_building_block_code=get_building_block(self.new_building_block_name, self.module).__code__
-##        self.function_dict=get_module_function_dict(module)
-        
-##        self.old_building_block_name=get_building_block_name(new_building_block_name)
-##        self.old_building_block=get_building_block(new_building_block_name, module)
-        
-        
- 
-##        BuildingBlockFunctions.FUNCTION_USE_DICT.value.update({self.new_building_block_name:self.new_building_block})
-
-                    
-##        ValidationData.DATA_DICT.value.update({self.new_building_block_name:self.new_building_block.__code__.co_varnames})
-##        ValidationData.DATA_DICT.value.update({self.old_building_block_name:self.old_building_block.__code__.co_varnames})
+        self.original_building_block=get_building_block(self.new_building_block_name, module)
+        self.original_building_block_code=get_building_block(self.new_building_block_name, module).__code__
         
     def switch_building_block_code(self):
         get_building_block(self.new_building_block_name, self.module).__code__=self.new_building_block.__code__
 
     def revert_building_block_code(self):
         get_building_block(self.new_building_block_name, self.module).__code__=self.original_building_block_code        
-        
-    def test_building_block(self,validation_data):
+
+    def test_parent_building_block(self, building_block_name):
+        validation_data=get_validation_data(self.new_building_block_name)
+        building_block=get_building_block(building_block_name, self.module)
+        original_output, original_output_time=get_building_block_output_and_duration(building_block, validation_data)
+        self.switch_building_block_code() #Temp switch the old function with the new funtion
+        switched_output, switched_output_time=get_building_block_output_and_duration(building_block, validation_data)        
+        self.revert_building_block_code() #After testing - revert into the old function
+        return compare_output_results(original_output, switched_output)
+
+    def test_building_block(self):
         """
         The method tests the building block both individually and as part of the automation cycles it intends to replace.
         """
+        validation_data=get_validation_data(self.new_building_block_name)
         test_results=[] #[True, False, ..] for every QA test ran
-        test_results.append(check_building_block_solely(self.new_building_block_name, self.new_building_block, validation_data, self.module)) #test_soley
+        test_results.append(check_building_block_solely(self.original_building_block, self.new_building_block, validation_data)) #test_soley 
         if test_results[0]==False:
-            print('function failed single operation')
+            print('function failed solo operation - fix function to match the output of the original function')
             return False
-        self.switch_building_block_code() #Temp switch the old function with the new funtion
+
         for module in CustomModules.INNERMODULES.value:
             outer_calls=get_module_function_outer_calls(module)
-            print(outer_calls)        
-        self.revert_building_block_code() #After testing - revert into the old function
-        
-
-            #test keys if values contains the new function name
-            
-##        for automation_cycle in AutomationCycles:
-##            for single_block in automation_cycle.value:
-##                if BuildingBlockFunctions.FUNCTION_DICT.value.get(self.new_building_block_name) == single_block:
-##                    test_results.append(check_building_block_integration(module,self.new_building_block_name, automation_cycle.value, validation_data))
+            possible_parent_building_blocks=outer_calls.get(self.new_building_block_name)
+            if possible_parent_building_blocks:
+                for parent_building_block_name in possible_parent_building_blocks:
+                    print(parent_building_block_name)
+##                    test_results.append(self.test_parent_building_block(parent_building_block_name))               
         return all(test_results)
 
-def test_function_3(x):
-    return x+6
-def test_function_2(x,y):
-    return x*y
-def test_function_1(x):
-    return x+5
     
 if __name__=='__main__':
-    new_building_block_name='angle'
-    def calc_angle(r_ij, r_kj):
-        from scipy.spatial.distance import cosine
-##        r_ij = xyzarr[i] - xyzarr[j]
-##        r_kj = xyzarr[k] - xyzarr[j]
-        cosine_theta = cosine(r_ij,r_kj)
-        theta = np.arccos(1-cosine_theta)
-        return 	theta
+    # filename='test_dipole'
+    print(base_module.get_angles_df_from_csv([2, 3, 5], ))
+    # dir with moledir -> in every dir there csv file of the xyz coord -> 'xyz_molecule_1.csv' -> return angles df
+    # def get_angle(p1, p2):
+    #     from scipy.spatial.distance import cosine
+    #     cosine_theta=cosine(p1, p2)
+    #     theta=np.arccos(1-cosine_theta)
+    #     return 	theta
 
-    i_x_y_z=np.array([0, 0, 0.39263333])
-    j_x_y_z=np.array([0, 0.75545, -0.19631667])
-    k_x_y_z=np.array([0, -0.75545, -0.19631667])
-    r_ij=i_x_y_z-j_x_y_z
-    r_kj=k_x_y_z-j_x_y_z
-    validation_data=(r_ij, r_kj)
-    validation_result=0.66217
+    # qa_tester=QATester(new_building_block=get_angle,
+    #                   module=base_module,
+    #                   )
+    # print(qa_tester.test_building_block())
 
-
-    function_module=base_module
-    function_module_dict=get_module_function_dict(base_module)
-    qa_tester=QATester(new_building_block_name=new_building_block_name,
-                       new_building_block=calc_angle, #test_function_1
-                       module=base_module,
-                       )
-
-    print(qa_tester.test_building_block(validation_data))
-
-
-##    validation_data_1=((2,-2),(4,5))
-##    validation_data_2=(4,2)
-##    validation_data_3=(2)
-
-##    print(qa_tester.test_building_block(comp_set,(2,3)))
 
 
 

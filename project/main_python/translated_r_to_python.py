@@ -1,9 +1,4 @@
 
-import sys
-##path_to_add=r'C:\Users\avishayk\Documents\GitHub\learning_python'
-path_to_add=r'C:\Users\edens\Documents\GitHub\learning_python\python_stuff'
-sys.path.insert(0, path_to_add)
-
 import pandas as pd
 pd.options.mode.chained_assignment = None
 import numpy as np
@@ -393,7 +388,7 @@ xyz_molecule_2.csv  1.120679  2.329781 -1.416985  2.94816
     dipole_df=pd.concat(df_list, axis=0)
     return dipole_df.round(3)
 
-def get_angles_df_from_csv(atoms_indexes): #gets a list of atom indexes
+def get_angles_df_from_csv(atoms_indexes, filename=None): #gets a list of atom indexes
     """
     a function that gets 3/4 atom indexes, and returns a df of angles-either agnle or dihedral
     works on a directory containing other directories of molecule csv files.
@@ -417,7 +412,10 @@ txt_molecule_2.xyz       166.494119
         column_name=('Angle '+str(atoms_indexes))
     else:
         column_name=('Dihedral '+str(atoms_indexes))
-    molecules=[molecule_dir for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)]
+    if not filename:
+        molecules=[molecule_dir for molecule_dir in os.listdir() if os.path.isdir(molecule_dir)]
+    else:
+        molecules=[filename]
     angle_df=pd.DataFrame(columns=[column_name])
     index_name=[]   
     for molecule in molecules:
