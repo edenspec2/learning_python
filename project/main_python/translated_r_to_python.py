@@ -7,6 +7,7 @@ import math
 from enum import Enum
 import xyz_file_function as xyz_lib
 import function_reviewed as fr
+import help_functions as hf
 import csv
 
 class GeneralConstants(Enum):
@@ -108,13 +109,6 @@ def delete_type_files(file_type='xyz'): ## my help function to delete xyz files
     for molecule in list_of_molecules:
         os.remove(os.path.abspath(molecule))
         
-def convert_csv_to_xyz_df(csv_filename):
-    xyz_df=fr.csv_filename_to_dataframe(csv_filename)
-    xyz_df.rename(columns={0:'atom',1:'x',2:'y',3:'z'},inplace=True)
-    xyz_df.replace(GeneralConstants.ATOMIC_NUMBERS.value,inplace=True)###change 'atom' to astype(int)
-    return xyz_df
-   
-
 
 def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-currently the R function generates filename without 'xyz_'.
     """
@@ -126,24 +120,14 @@ def xyz_file_generator(folder_path):###works, name in R:'xyz_file_generator'-cur
         xyz_file_generator(path)
     """
     os.chdir(folder_path)
-    list_of_csv_files=xyz_lib.get_filename_list('xyz_') #changed to 'xyz_' from .csv
+    list_of_csv_files=hf.get_filename_list('xyz_') #changed to 'xyz_' from .csv
     for csv_filename in list_of_csv_files:
-        xyz_df=convert_csv_to_xyz_df(csv_filename)
-        new_filename=xyz_lib.change_filetype(csv_filename, new_type=xyz_lib.FileExtensions.XYZ.value)
-        xyz_lib.dataframe_to_xyz(xyz_df, new_filename.replace('xyz_','txt_'))
+        xyz_df=hf.convert_file_to_xyz_df(csv_filename)
+        new_filename=hf.change_filetype(csv_filename, new_type=hf.FileExtensions.XYZ.value)
+        hf.dataframe_to_xyz(xyz_df, new_filename.replace('xyz_','txt_'))
     os.chdir('../')
     return 
 
-def xyz_to_ordered_DataFrame(filename,columns=None):#my help function
-    # Im sure that this fucntion is redundent
-    """
-    a function witch gets a xyz file name and produces an organized dataframe.
-    this function is simillar to fr.csv_filename_to_dataframe which works good on csv files.
-    """
-    strip_lines=xyz_lib.get_file_striped_lines(filename)
-    split_lines=[line.split(' ') for line in strip_lines]
-    ordered_df=pd.DataFrame(split_lines,columns=xyz_lib.XYZConstants.DF_COLUMNS.value).fillna('') #adding columns work
-    return ordered_df
 
 def move_xyz_files_directory(current_directory,new_directory):#my help function
     """
@@ -152,7 +136,7 @@ def move_xyz_files_directory(current_directory,new_directory):#my help function
     A void function
     """
     os.chdir(current_directory)
-    list_of_xyz_files=xyz_lib.get_filename_list(xyz_lib.FileExtensions.XYZ.value)
+    list_of_xyz_files=hf.get_filename_list(hf.FileExtensions.XYZ.value)
     for xyz_filename in list_of_xyz_files:
         current_path=os.path.join(current_directory, xyz_filename)
         new_path=os.path.join(new_directory, xyz_filename)
@@ -222,9 +206,6 @@ def molecule_atom_swapper(files_directory_path,molecule_file_name,indexes):###wo
     return 
 
 
-def get_specific_molecule_df(molecule_file_name):
-    pass
-
 
 
                                                     #only the number of them
@@ -257,11 +238,11 @@ def coordination_transformation(coor_file_name,base_atoms_indexes,return_variabl
     """
     indexes=np.array(base_atoms_indexes)-1
     try:
-        molecule=(xyz_to_ordered_DataFrame(coor_file_name)).drop([0,1],axis=0)
+        molecule=(hf.convert_file_to_xyz_df(coor_file_name,splitter=None)).drop([0,1],axis=0)
         molecule=molecule.reset_index()
 
     except: #this way it works on csv file as well
-        molecule=convert_csv_to_xyz_df(coor_file_name)
+        molecule=hf.convert_file_to_xyz_df(coor_file_name)
     if (len(indexes)==4):
         new_origin=(molecule[['x','y','z']].iloc[indexes[0]].astype(float)+molecule[['x','y','z']].iloc[indexes[1]].astype(float))/2
         new_y=(molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin)/np.linalg.norm((molecule[['x','y','z']].iloc[indexes[2]].astype(float)-new_origin))
@@ -422,7 +403,7 @@ txt_molecule_2.xyz       166.494119
         xyz_file_generator(os.path.abspath(molecule))
         os.chdir(os.path.abspath(molecule))     
                                  ##need fix-dont make xyz out of dipole/ currently npa-xsls type
-        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list('txt')[0]).drop([0,1],axis=0))
+        xyz_df=(hf.convert_file_to_xyz_df(xyz_lib.get_filename_list('txt')[0],splitter=None).drop([0,1],axis=0))
         xyz_df.reset_index()
         if(len(indexes)==3):
             first_bond=xyz_df[['x','y','z']].iloc[new_indexes[0]].astype(float)-xyz_df[['x','y','z']].iloc[new_indexes[1]].astype(float)
@@ -481,7 +462,7 @@ txt_molecule_2.xyz          0.755886  ...            1.648676
         xyz_file_generator(os.path.abspath(molecule))
         os.chdir(os.path.abspath(molecule))
         indexes.append(xyz_lib.get_filename_list('txt')[0])
-        xyz_df=(xyz_to_ordered_DataFrame(xyz_lib.get_filename_list('txt')[0])).drop([0,1],axis=0)
+        xyz_df=(hf.convert_file_to_xyz_df(xyz_lib.get_filename_list('txt')[0],splitter=None)).drop([0,1],axis=0)
         for i in range(0,len(pairs)):
             bond_length=(np.linalg.norm(xyz_df[['x','y','z']].iloc[pairs[i][0]].astype(float)-xyz_df[['x','y','z']].iloc[pairs[i][1]].astype(float)))
             bond_length_list.append(bond_length)
@@ -591,21 +572,23 @@ class Molecule():
         self.molecule_path=os.path.abspath(molecule_dir_name)
         os.chdir(self.molecule_path)
         self.list_of_files=[filename for filename in os.listdir(self.molecule_path)]
-        self.coordinates_df=[convert_csv_to_xyz_df(file_name) for file_name in self.list_of_files if 'xyz_' in file_name][0] #fix atomic number ,dtype
-        # self.dfs=pd.DataFrame([fr.csv_filename_to_dataframe(file_name) for file_name in self.list_of_files],index=self.list_of_files)
+        self.coordinates_df=[hf.convert_file_to_xyz_df(file_name) for file_name in self.list_of_files if 'xyz_' in file_name][0] #fix atomic number ,dtype
+        # self.dfs=pd.DataFrame([hf.convert_file_to_xyz_df(file_name) for file_name in self.list_of_files],index=self.list_of_files)
         os.chdir('../')
      
     def get_filename(self,file_type):
         return [file_name for file_name in self.list_of_files if file_type in file_name][0]
-    def get_specific_df(self,file_type): ##info df will not be ordered
+    
+    def get_specific_df(self,file_type,splitter=None): ##info df will not be ordered
         os.chdir(self.molecule_path)
-        df=fr.csv_filename_to_dataframe([file_name for file_name in self.list_of_files if file_type in file_name][0])
+        df=hf.get_df_from_csv([file_name for file_name in self.list_of_files if file_type in file_name][0],splitter=splitter)
         os.chdir('../')
         return df
+    
     def export_coordinates_to_xyz(self):
         os.chdir(self.molecule_path)
-        output_name=[file_name for file_name in self.list_of_files if 'xyz_' in file_name][0]
-        xyz_lib.dataframe_to_xyz(self.coordinates_df,xyz_lib.change_filetype(output_name,'_tc.xyz'))
+        output_name=hf.get_filename_list('xyz')[0]
+        hf.dataframe_to_xyz(self.coordinates_df,xyz_lib.change_filetype(output_name,'_tc.xyz'))
         os.chdir('../')
         
     def swap_atom_pair(self,pair_index): #swapping is permanently changed
@@ -702,7 +685,37 @@ class Molecule():
             second_cross=np.cross(third_bond,second_bond)
             angle=get_angle(first_cross, second_cross)*(180/math.pi)
         return angle
+    
+    def get_info_df(self):
+        info_df=self.get_specific_df('info')
+        info_df.set_axis(info_df[0],inplace=True)
+        frequencies=info_df.loc['Frequencies'][[2,3,4]]
+        ir=info_df.loc['IR'][[3,4,5]]
+        frequencies_list = [item for sublist in frequencies.values.tolist() for item in sublist]
+        ir_list=[item for sublist in ir.values.tolist() for item in sublist]
+        ordered_info_df=pd.DataFrame([frequencies_list,ir_list], index=['Frequency[1/cm]','IR intensity'],dtype=float)
+        return ordered_info_df
+    
+    def get_vib_info(self,vib_filename):
+        vib=np.array((self.get_specific_df(vib_filename,',').drop([0,1],axis=1)).astype(float))
+        data,magnitude=[],[]
+        for i in range(0,vib.shape[0]):
+            data.append(vib[i,0:3])
+            magnitude.append(np.linalg.norm(vib[i,0:3]))
+            data.append(vib[i,3:6])
+            magnitude.append(np.linalg.norm(vib[i,3:6]))
+            data.append(vib[i,6:9])
+            magnitude.append(np.linalg.norm(vib[i,6:9]))
+        df=pd.DataFrame(data)
+        df['magnitude']=magnitude
+        df['frequency']=self.get_info_df().loc['Frequency[1/cm]']
+        outer_finger=(df['frequency'].astype(float)>1500)
+        index_max=df[outer_finger]['magnitude'].idxmax()
+        frequency=(df['frequency'][index_max]).astype(float)
+        mask=(self.get_info_df().T)['Frequency[1/cm]']==frequency
+        return (self.get_info_df().T)[mask].T
         
+    
 class Molecules():
     def __init__(self,molecules_dir_name):
         self.molecules_path=os.path.abspath(molecules_dir_name)
