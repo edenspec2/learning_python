@@ -189,9 +189,9 @@ def get_dataframe_from_splitted_lines(splitted_lines, columns=None):
     """
     
     if columns:
-        df=pd.DataFrame(splitted_lines, columns=columns,dtype=float)
+        df=pd.DataFrame(splitted_lines, columns=columns)
     else:
-        df=pd.DataFrame(splitted_lines,dtype=float)
+        df=pd.DataFrame(splitted_lines)
     return df
 
 def get_normalize_coordinates(df,coordinates_normalize_parameter):
