@@ -729,7 +729,7 @@ if __name__=='__main__':
     molecules=Molecules('test_dipole')
     molecule_1=molecules.molecules[0]
     os.chdir(path)
-    x=get_angles_df_from_csv([2,3,4])
+    y=get_angles_df_from_csv([2,3,4])
     df=molecule_1.get_bond_angle([2,3,4])
 
     
